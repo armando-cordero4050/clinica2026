@@ -1,7 +1,7 @@
 import { Outlet, Link } from 'react-router-dom';
 import { Activity, Users, Calendar, TestTube2, LayoutDashboard } from "lucide-react";
 
-export function AppShell() {
+export default function AppShell() {
     return (
         <div className="flex h-screen bg-background">
             {/* Sidebar */}

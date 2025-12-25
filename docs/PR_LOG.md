@@ -19,7 +19,20 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 
 ---
 
-## PR #__ — <título>
+## PR #2 — Supabase Foundation (Auth & Core)
+**Fecha:** 2025-12-24
+**Objetivo:** Implementar base de datos Supabase (Tablas Core + RLS) y Auth Client.
+**Cambios:**
+- DB: Tablas `clinics`, `profiles`, `roles`, `permissions`, `clinic_members`.
+- DB: Policies RLS multi-tenant estrictas.
+- DB: Función `get_current_clinic_id`.
+- Front: `AuthContext` y `useSession` (src/shared/lib/auth.tsx).
+- Config: `supabase/config.toml` y migración `001_core_foundation.sql`.
+**Verificación:**
+- SQL revisado contra decisión de multi-tenancy.
+- Build OK.
+**Riesgos:** Crítico (Base de seguridad).
+**Notas:** Se unificó PR #3 en este PR por atomicidad.
 **Fecha:** YYYY-MM-DD  
 **Objetivo:**  
 **Cambios:**  
