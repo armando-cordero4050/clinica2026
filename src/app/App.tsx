@@ -1,15 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AppShell from '@/app/AppShell';
 import { AuthProvider } from '@/shared/lib/auth';
 import { Toaster } from 'sonner';
+import { AuthGuard } from '@/shared/components/AuthGuard';
 
-// Placeholder Pages
-const Dashboard = () => <div className="p-4"><h1 className="text-2xl font-bold mb-4">Dashboard</h1><p className="text-muted-foreground">Bienvenido a DentalFlow.</p></div>;
-const Calendar = () => <div className="p-4"><h1 className="text-2xl font-bold mb-4">Calendario</h1></div>;
-const Patients = () => <div className="p-4"><h1 className="text-2xl font-bold mb-4">Pacientes</h1></div>;
-const Lab = () => <div className="p-4"><h1 className="text-2xl font-bold mb-4">Laboratorio</h1></div>;
-const Settings = () => <div className="p-4"><h1 className="text-2xl font-bold mb-4">Configuración</h1></div>;
+// Pages
+import LoginPage from '@/app/login/page';
+import PatientsPage from '@/app/dashboard/patients/page';
+import KanbanPage from '@/app/dashboard/lab/kanban/page';
+import NewOrderPage from '@/app/dashboard/lab/orders/new/page';
 
 const queryClient = new QueryClient();
 
@@ -19,13 +19,24 @@ export default function App() {
             <BrowserRouter>
                 <AuthProvider>
                     <Routes>
-                        <Route element={<AppShell />}>
-                            <Route path="/" element={<Dashboard />} />
-                            <Route path="/calendar" element={<Calendar />} />
-                            <Route path="/patients" element={<Patients />} />
-                            <Route path="/lab" element={<Lab />} />
-                            <Route path="/settings" element={<Settings />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        
+                        {/* Protected Routes */}
+                        <Route path="/dashboard" element={
+                            <AuthGuard>
+                                <AppShell />
+                            </AuthGuard>
+                        }>
+                            <Route index element={<Navigate to="patients" replace />} />
+                            <Route path="patients" element={<PatientsPage />} />
+                            
+                            {/* Lab Module */}
+                            <Route path="lab/kanban" element={<KanbanPage />} />
+                            <Route path="lab/orders/new" element={<NewOrderPage />} />
                         </Route>
+
+                        {/* Root Redirect */}
+                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     </Routes>
                     <Toaster />
                 </AuthProvider>

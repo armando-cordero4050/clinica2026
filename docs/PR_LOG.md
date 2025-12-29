@@ -78,5 +78,23 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 - Componentes Base (UI) creados manualmente (`Form`, `Dialog`, `Table`).
 **Riesgos:**
 - Verificar que el `clinic_id` se inyecte correctamente en el INSERT (responsabilidad del API Service).
+---
+
+## PR #5 — Lab Module (Orders & Kanban)
+**Fecha:** 2025-12-28
+**Objetivo:** Gestión Avanzada de Órdenes y Flujo de Trabajo (Kanban).
+**Cambios:**
+- `src/modules/lab/schemas`: Zod Schema para Ordenes e Items.
+- `src/modules/lab/api`: API Transaccional (Order + Items).
+- `src/modules/lab/components`:
+    - `OrderWizard`: Formulario paso a paso para clínicas.
+    - `KanbanBoard`: Tablero de gestión de estados (Drag/Drop simulado con Select).
+- `src/app/dashboard/lab`: Paginas de Kanban y Nueva Orden.
+- **UI Kit**: Componentes `Select` y `Badge` añadidos.
+**Verificación:**
+- Build OK.
+- Lint OK (Fix variables no usadas).
+**Riesgos:**
+- El Kanban usa actualización optimista; si falla el API, revierte el estado.
 **Notas:**
-- Se eliminaron archivos basura de versiones anteriores del módulo de pacientes.
+- Se usó `react-hook-form` con `useFieldArray` para los ítems de la orden.
