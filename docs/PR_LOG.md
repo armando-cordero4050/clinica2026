@@ -46,5 +46,21 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 - SQL Syntax Check: Pendiente.
 **Riesgos:**
 - Reset de DB requerido para aplicar V4 limpio.
+---
+
+## PR #3 — Auth & Tenant Resolution
+**Fecha:** 2025-12-28
+**Objetivo:** Implementar flujo de Login y resolución automática de `clinic_id`.
+**Cambios:**
+- Refactor `AuthProvider` (auth.tsx): Fetch de `profiles` al iniciar sesión.
+- Componente `AuthGuard`: Protección de rutas.
+- Página Login (`/login`) con shadcn/ui.
+- Fix: Reemplazo de `next/navigation` por `react-router-dom` (Vite compatible).
+**Verificación:**
+- Build OK.
+- Lint OK.
+- Validación manual de tipos en `database.types.ts`.
+**Riesgos:**
+- Dependencia de `next-themes` añadida para compatibilidad con shadcn.
 **Notas:**
-- Se inicia nueva numeración de migración para evitar conflictos con V3.
+- Se corrigió error de importación de Next.js en proyecto Vite.
