@@ -96,5 +96,18 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 - Lint OK (Fix variables no usadas).
 **Riesgos:**
 - El Kanban usa actualización optimista; si falla el API, revierte el estado.
+---
+
+## PR #6 — Global UI Integration
+**Fecha:** 2025-12-28
+**Objetivo:** Unificación de Módulos en Dashboard Layout.
+**Cambios:**
+- `src/app/App.tsx`: Configuración de Routing (`/dashboard`) y AuthGuard.
+- `src/app/AppShell.tsx`: Sidebar con navegación real (Pacientes, Lab).
+- **Core**: Implementación de Logout y User Info en Sidebar.
+**Verificación:**
+- Build OK.
+- Navegación interna conectada.
 **Notas:**
-- Se usó `react-hook-form` con `useFieldArray` para los ítems de la orden.
+- Se eliminaron las rutas placeholder.
+- El sistema es totalmente navegable ahora.

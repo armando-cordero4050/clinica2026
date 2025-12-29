@@ -25,6 +25,7 @@ export default function AppShell() {
                     {/* Common Links */}
                     <DropdownSection title="Clínica">
                         <NavItem to="/dashboard/patients" icon={<Users size={20} />} label="Pacientes" />
+                        <NavItem to="/dashboard/appointments" icon={<Activity size={20} />} label="Agenda" />
                     </DropdownSection>
 
                     <DropdownSection title="Laboratorio">
