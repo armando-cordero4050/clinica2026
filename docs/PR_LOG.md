@@ -33,13 +33,18 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 - Build OK.
 **Riesgos:** Crítico (Base de seguridad).
 **Notas:** Se unificó PR #3 en este PR por atomicidad.
-**Fecha:** YYYY-MM-DD  
-**Objetivo:**  
-**Cambios:**  
-**Decisiones tomadas (si aplica):**  
-**Verificación:**  
-- Build:
-- Lint:
-- Tests:
-**Riesgos / pendientes:**  
+---
+
+## PR #2 — Database Schema Implementation (V4 Reboot)
+**Fecha:** 2025-12-28
+**Objetivo:** Implementar la base de datos V4 (Clinics, Patients, Lab Orders) según la guía "Zero-Based".
+**Cambios:**
+- Migration: `20251229000000_init_v4_schema.sql`
+- Enums & Tables: Clinics, Profiles, Patients, Lab Services, Orders.
+- Security: RLS estricto por `clinic_id`.
+**Verificación:**
+- SQL Syntax Check: Pendiente.
+**Riesgos:**
+- Reset de DB requerido para aplicar V4 limpio.
 **Notas:**
+- Se inicia nueva numeración de migración para evitar conflictos con V3.

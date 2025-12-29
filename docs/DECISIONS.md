@@ -97,3 +97,16 @@ Regla: si una decisión cambia, se agrega un nuevo ADR que la reemplace, nunca s
 **Decisión:** IVA inicia en 12% pero es configurable por clínica desde módulo Configuración.  
 **Impacto:**
 - `clinic_settings.tax_percent` editable con permisos.
+
+---
+
+## ADR-0009 — Reboot de Base de Datos (V4 Zero-Based)
+**Estado:** Aprobado
+**Fecha:** 2025-12-28
+**Decisión:** Reiniciar el esquema de base de datos (`20251229000000_init_v4_schema.sql`) descartando migraciones previas conflictivas.
+**Motivo:**
+- La lógica V3 tenía dependencias circulares y falta de RLS estricto en el origen.
+- V4 alinea `lab_orders`, `patients` y `clinics` con la "Guía Maestra V4".
+**Impacto:**
+- Se requiere un `db reset` en el entorno de desarrollo/staging.
+- Tablas Core: `clinics`, `profiles`, `patients`, `lab_orders` (con `clinic_id` obligatorio).
