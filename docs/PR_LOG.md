@@ -62,5 +62,21 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 - Validación manual de tipos en `database.types.ts`.
 **Riesgos:**
 - Dependencia de `next-themes` añadida para compatibilidad con shadcn.
+---
+
+## PR #4 — Patients Module (CRUD)
+**Fecha:** 2025-12-28
+**Objetivo:** Gestión de Pacientes con RLS y Validación.
+**Cambios:**
+- `src/modules/patients/schemas`: Zod Schema estricto.
+- `src/modules/patients/api`: Supabase Service para CRUD.
+- `src/modules/patients/components`: `PatientForm` (Modal) y `PatientList`.
+- `src/app/dashboard/patients`: Página principal.
+- **Cleanup**: Eliminados archivos legacy (`hooks/usePatients.ts`, `pages/*` antiguos) que causaban conflictos.
+**Verificación:**
+- Build OK.
+- Componentes Base (UI) creados manualmente (`Form`, `Dialog`, `Table`).
+**Riesgos:**
+- Verificar que el `clinic_id` se inyecte correctamente en el INSERT (responsabilidad del API Service).
 **Notas:**
-- Se corrigió error de importación de Next.js en proyecto Vite.
+- Se eliminaron archivos basura de versiones anteriores del módulo de pacientes.
