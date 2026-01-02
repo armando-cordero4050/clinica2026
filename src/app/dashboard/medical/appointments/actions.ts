@@ -31,6 +31,13 @@ export interface Doctor {
   role: string
 }
 
+export interface Service {
+  id: string
+  name: string
+  description?: string
+  price?: number
+}
+
 /**
  * Get appointments within a date range
  */
@@ -93,6 +100,50 @@ export async function getDoctors(): Promise<Doctor[]> {
 }
 
 /**
+ * Create a new patient inline (minimal fields for quick appointment creation)
+ */
+export async function createPatientInline(data: {
+  first_name: string
+  last_name: string
+  mobile: string
+}) {
+  const supabase = await createClient()
+  
+  console.log('[createPatientInline] Creating patient:', data)
+
+  // Get current user's clinic_id
+  const { data: profile } = await supabase.rpc('get_my_profile')
+  
+  if (!profile?.clinic_id) {
+    console.error('[createPatientInline] No clinic_id found for user')
+    return { success: false, message: 'No se pudo identificar la clínica del usuario' }
+  }
+
+  // Create patient
+  const { data: newPatient, error } = await supabase
+    .from('patients')
+    .insert({
+      first_name: data.first_name.trim(),
+      last_name: data.last_name.trim(),
+      mobile: data.mobile.trim(),
+      clinic_id: profile.clinic_id,
+      is_active: true
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error('[createPatientInline] Error:', JSON.stringify(error, null, 2))
+    return { success: false, message: error.message }
+  }
+
+  console.log('[createPatientInline] Success! New patient ID:', newPatient.id)
+  
+  revalidatePath('/dashboard/medical/patients')
+  return { success: true, id: newPatient.id }
+}
+
+/**
  * Create a new appointment
  */
 export async function createAppointment(data: {
@@ -135,4 +186,205 @@ export async function createAppointment(data: {
   
   revalidatePath('/dashboard/medical/appointments')
   return { success: true, id: newId }
+}
+
+/**
+ * Get current logged-in doctor
+ */
+export async function getCurrentDoctor(): Promise<Doctor | null> {
+  const supabase = await createClient()
+  
+  const { data: profile } = await supabase.rpc('get_my_profile')
+  
+  if (!profile || !['clinic_doctor', 'doctor'].includes(profile.role)) {
+    return null
+  }
+
+  return {
+    id: profile.id,
+    email: profile.email || '',
+    role: profile.role
+  }
+}
+
+/**
+ * Search guardians (existing patients who can be guardians)
+ */
+export async function searchGuardians(query: string): Promise<Patient[]> {
+  return searchPatients(query) // Reuse patient search
+}
+
+/**
+ * Search services
+ */
+export async function searchServices(query: string) {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from('clinic_service_prices')
+    .select(`
+      id,
+      service_id,
+      price,
+      lab_services:service_id (
+        id,
+        name,
+        description
+      )
+    `)
+    .ilike('lab_services.name', `%${query}%`)
+    .limit(10)
+
+  if (error) {
+    console.error('[searchServices] Error:', error)
+    return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return data?.map((item: any) => ({
+    id: item.service_id,
+    name: item.lab_services?.name || '',
+    description: item.lab_services?.description || '',
+    price: item.price
+  })) || []
+}
+
+/**
+ * Create a new service
+ */
+export async function createService(data: {
+  name: string
+  description?: string
+  price?: number
+}) {
+  const supabase = await createClient()
+  
+  // Get current user's clinic_id
+  const { data: profile } = await supabase.rpc('get_my_profile')
+  
+  if (!profile?.clinic_id) {
+    return { success: false, message: 'No se pudo identificar la clínica' }
+  }
+
+  // Create service in lab_services first
+  const { data: newService, error: serviceError } = await supabase
+    .from('lab_services')
+    .insert({
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      is_active: true
+    })
+    .select('id')
+    .single()
+
+  if (serviceError) {
+    console.error('[createService] Error creating service:', serviceError)
+    return { success: false, message: serviceError.message }
+  }
+
+  // Create price for this clinic
+  if (data.price) {
+    const { error: priceError } = await supabase
+      .from('clinic_service_prices')
+      .insert({
+        clinic_id: profile.clinic_id,
+        service_id: newService.id,
+        price: data.price
+      })
+
+    if (priceError) {
+      console.error('[createService] Error creating price:', priceError)
+    }
+  }
+
+  revalidatePath('/dashboard/medical/services')
+  return { success: true, id: newService.id, name: data.name }
+}
+
+/**
+ * Create patient with optional guardian
+ */
+export async function createPatientWithGuardian(data: {
+  // Patient data
+  document_type: string
+  document_number?: string
+  first_name: string
+  last_name: string
+  mobile: string
+  email?: string
+  
+  // Guardian data (optional)
+  has_guardian?: boolean
+  guardian_id?: string // If existing guardian
+  guardian_relation?: string
+  guardian_document_type?: string
+  guardian_document_number?: string
+  guardian_first_name?: string
+  guardian_last_name?: string
+  guardian_mobile?: string
+  guardian_email?: string
+  guardian_address?: string
+}) {
+  const supabase = await createClient()
+  
+  // Get current user's clinic_id
+  const { data: profile } = await supabase.rpc('get_my_profile')
+  
+  if (!profile?.clinic_id) {
+    return { success: false, message: 'No se pudo identificar la clínica del usuario' }
+  }
+
+  let guardianId = data.guardian_id
+
+  // Create guardian if needed (new guardian)
+  if (data.has_guardian && !data.guardian_id && data.guardian_first_name) {
+    const { data: newGuardian, error: guardianError } = await supabase
+      .from('patients')
+      .insert({
+        first_name: data.guardian_first_name.trim(),
+        last_name: data.guardian_last_name?.trim() || '',
+        mobile: data.guardian_mobile?.trim() || '',
+        email: data.guardian_email?.trim() || null,
+        id_type: (data.guardian_document_type || 'DPI').toLowerCase(),
+        id_number: data.guardian_document_number?.trim() || null,
+        clinic_id: profile.clinic_id,
+        is_active: true
+      })
+      .select('id')
+      .single()
+
+    if (guardianError) {
+      console.error('[createPatientWithGuardian] Error creating guardian:', guardianError)
+      return { success: false, message: `Error al crear apoderado: ${guardianError.message}` }
+    }
+
+    guardianId = newGuardian.id
+  }
+
+  // Create patient
+  const { data: newPatient, error: patientError } = await supabase
+    .from('patients')
+    .insert({
+      first_name: data.first_name.trim(),
+      last_name: data.last_name.trim(),
+      mobile: data.mobile.trim(),
+      email: data.email?.trim() || null,
+      id_type: data.document_type.toLowerCase(),
+      id_number: data.document_number?.trim() || null,
+      guardian_id: guardianId || null,
+      guardian_relationship: data.guardian_relation || null,
+      clinic_id: profile.clinic_id,
+      is_active: true
+    })
+
+    .select('id')
+    .single()
+
+  if (patientError) {
+    console.error('[createPatientWithGuardian] Error creating patient:', patientError)
+    return { success: false, message: `Error al crear paciente: ${patientError.message}` }
+  }
+
+  revalidatePath('/dashboard/medical/patients')
+  return { success: true, id: newPatient.id }
 }
