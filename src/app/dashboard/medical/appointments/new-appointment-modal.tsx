@@ -286,7 +286,8 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
                 start: dateObj,
                 end: endDate,
                 appointment_type: 'consultation',
-                reason: notes.trim() || undefined
+                reason: notes.trim() || undefined,
+                service_id: selectedService.id
             })
 
             if (result.success) {

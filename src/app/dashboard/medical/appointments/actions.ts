@@ -154,6 +154,7 @@ export async function createAppointment(data: {
   end: Date
   appointment_type?: string
   reason?: string
+  service_id?: string
 }) {
   const supabase = await createClient()
 
@@ -164,9 +165,11 @@ export async function createAppointment(data: {
     start: data.start.toISOString(),
     end: data.end.toISOString(),
     appointment_type: data.appointment_type || 'consultation',
-    reason: data.reason
+    reason: data.reason,
+    service_id: data.service_id
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newId, error } = await supabase.rpc('create_appointment_rpc', {
     p_patient_id: data.patient_id,
     p_doctor_id: data.doctor_id || null,
@@ -174,8 +177,9 @@ export async function createAppointment(data: {
     p_start: data.start.toISOString(),
     p_end: data.end.toISOString(),
     p_appointment_type: data.appointment_type || 'consultation',
-    p_reason: data.reason || null
-  })
+    p_reason: data.reason || null,
+    p_service_id: data.service_id || null
+  } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
   if (error) {
     console.error('[createAppointment] Error:', JSON.stringify(error, null, 2))
