@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { Appointment } from './actions'
+import { Appointment, updateAppointmentStatus } from './actions'
 import { AlertTriangle, Calendar, Clock, User, FileText, X } from 'lucide-react'
 
 interface EditAppointmentModalProps {
@@ -29,13 +29,43 @@ export function EditAppointmentModal({ isOpen, onClose, appointment }: EditAppoi
 
         setIsSubmitting(true)
         try {
-            // TODO: Implement cancel appointment action
+            await updateAppointmentStatus(appointment.id, 'cancelled')
             toast.success('Cita cancelada exitosamente')
             onClose()
             router.refresh()
         } catch (error) {
             console.error('Error canceling appointment:', error)
             toast.error('Error al cancelar la cita')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleConfirm = async () => {
+        setIsSubmitting(true)
+        try {
+            await updateAppointmentStatus(appointment.id, 'confirmed')
+            toast.success('Cita confirmada exitosamente')
+            onClose()
+            router.refresh()
+        } catch (error) {
+            console.error('Error confirming appointment:', error)
+            toast.error('Error al confirmar la cita')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleComplete = async () => {
+        setIsSubmitting(true)
+        try {
+            await updateAppointmentStatus(appointment.id, 'completed')
+            toast.success('Cita completada exitosamente')
+            onClose()
+            router.refresh()
+        } catch (error) {
+            console.error('Error completing appointment:', error)
+            toast.error('Error al completar la cita')
         } finally {
             setIsSubmitting(false)
         }
@@ -140,18 +170,40 @@ export function EditAppointmentModal({ isOpen, onClose, appointment }: EditAppoi
                         variant="outline"
                         className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
                         onClick={handleCancel}
-                        disabled={isSubmitting || appointment.status === 'cancelled'}
+                        disabled={isSubmitting || appointment.status === 'cancelled' || appointment.status === 'completed'}
                     >
                         <AlertTriangle className="w-4 h-4 mr-2" />
-                        Cancelar Cita
+                        Cancelar
                     </Button>
-                    <Button
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-                        onClick={handleEdit}
-                        disabled={isSubmitting || appointment.status === 'cancelled'}
-                    >
-                        Editar Cita
-                    </Button>
+                    
+                    {appointment.status === 'scheduled' && (
+                        <Button
+                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                            onClick={handleConfirm}
+                            disabled={isSubmitting}
+                        >
+                            Confirmar
+                        </Button>
+                    )}
+
+                    {appointment.status === 'confirmed' && (
+                        <Button
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                            onClick={handleComplete}
+                            disabled={isSubmitting}
+                        >
+                            Completar
+                        </Button>
+                    )}
+
+                    {appointment.status === 'completed' && (
+                        <Button
+                            className="flex-1 bg-gray-400 text-white cursor-not-allowed"
+                            disabled
+                        >
+                            Completada
+                        </Button>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

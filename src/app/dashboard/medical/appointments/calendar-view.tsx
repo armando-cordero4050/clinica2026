@@ -161,9 +161,14 @@ export default function CalendarView({ appointments }: { appointments: Appointme
 
                                     {/* Events Layer */}
                                     {dayEvents.map(apt => (
-                                         <div
+                                        <div
                                             key={apt.id}
-                                            className="absolute left-1 right-1 rounded-[3px] bg-blue-500 hover:bg-blue-600 text-white text-xs p-1.5 shadow-sm cursor-pointer overflow-hidden border-l-[4px] border-blue-200 transition-all z-10"
+                                            className={`absolute left-1 right-1 rounded-[3px] text-xs p-1.5 shadow-sm cursor-pointer overflow-hidden border-l-[4px] transition-all z-10
+                                            ${apt.status === 'confirmed' ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-500' : 
+                                              apt.status === 'completed' ? 'bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-500' :
+                                              apt.status === 'cancelled' ? 'bg-red-100 hover:bg-red-200 text-red-800 border-red-500' :
+                                              'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-500'
+                                            }`}
                                             style={getEventStyle(apt)}
                                         onClick={() => {
                                             setSelectedAppointment(apt)

@@ -193,6 +193,27 @@ export async function createAppointment(data: {
 }
 
 /**
+ * Update appointment status
+ */
+export async function updateAppointmentStatus(id: string, status: string) {
+  const supabase = await createClient()
+
+  // Verify ownership via RLS policy implicitly, but good to have explicit RPC or update
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[updateAppointmentStatus] Error:', error)
+    return { success: false, message: error.message }
+  }
+
+  revalidatePath('/dashboard/medical/appointments')
+  return { success: true }
+}
+
+/**
  * Get current logged-in doctor
  */
 export async function getCurrentDoctor(): Promise<Doctor | null> {
