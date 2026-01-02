@@ -1,0 +1,14 @@
+{
+    "watch": [
+        ".env",
+        ".env.local"
+    ],
+    "ignore": [
+        "src/*",
+        "public/*",
+        ".next/*",
+        "node_modules/*"
+    ],
+    "exec": "next dev --turbopack",
+    "ext": "env"
+}

@@ -1,0 +1,91 @@
+-- ============================================================================
+-- Script para asociar drpedro@clinica.com con su clínica
+-- NO REQUIERE MIGRACIONES PREVIAS - Todo ya está configurado correctamente
+-- ============================================================================
+
+-- PASO 1: Ver clínicas disponibles en schema_medical (donde están realmente)
+SELECT id, name, odoo_partner_id, email
+FROM schema_medical.clinics 
+ORDER BY created_at DESC;
+
+-- PASO 2: Ver el usuario drpedro@clinica.com
+SELECT id, email, name, role
+FROM schema_core.users 
+WHERE email = 'drpedro@clinica.com';
+
+-- PASO 3: ¿Ya está asociado a una clínica?
+SELECT 
+    cs.id as staff_id,
+    cs.role,
+    cs.title,
+    cs.job_position,
+    u.email as user_email,
+    u.name as user_name,
+    c.name as clinic_name,
+    c.id as clinic_id
+FROM schema_medical.clinic_staff cs
+JOIN schema_core.users u ON u.id = cs.user_id
+JOIN schema_medical.clinics c ON c.id = cs.clinic_id
+WHERE u.email = 'drpedro@clinica.com';
+
+-- PASO 4: Si el PASO 3 no devolvió resultados, ejecutar esto:
+-- (Crear la asociación usando el clinic_id del PASO 1 y el user_id del PASO 2)
+
+INSERT INTO schema_medical.clinic_staff (
+    clinic_id, 
+    user_id, 
+    role, 
+    odoo_contact_id, 
+    title, 
+    job_position,
+    is_primary
+)
+SELECT 
+  c.id as clinic_id,
+  u.id as user_id,
+  'clinic_doctor' as role,
+  82 as odoo_contact_id,
+  'Dr.' as title,
+  'Dentista General' as job_position,
+  FALSE as is_primary
+FROM schema_medical.clinics c
+CROSS JOIN schema_core.users u
+WHERE c.name LIKE '%Sonrisas%'
+  AND u.email = 'drpedro@clinica.com'
+ON CONFLICT (clinic_id, user_id) DO UPDATE SET
+    role = EXCLUDED.role,
+    title = EXCLUDED.title,
+    job_position = EXCLUDED.job_position,
+    updated_at = NOW()
+RETURNING 
+    id, 
+    clinic_id, 
+    user_id, 
+    role, 
+    title, 
+    job_position;
+
+-- PASO 5: Verificar que se creó correctamente
+SELECT 
+    cs.id as staff_id,
+    cs.role,
+    cs.title,
+    cs.job_position,
+    cs.is_primary,
+    u.email as user_email,
+    u.name as user_name,
+    c.name as clinic_name
+FROM schema_medical.clinic_staff cs
+JOIN schema_core.users u ON u.id = cs.user_id
+JOIN schema_medical.clinics c ON c.id = cs.clinic_id
+WHERE u.email = 'drpedro@clinica.com';
+
+-- ============================================================================
+-- NOTAS IMPORTANTES:
+-- ============================================================================
+-- 1. Las clínicas están en schema_medical.clinics (NO en schema_core.clinics)
+-- 2. El clinic_staff está en schema_medical.clinic_staff
+-- 3. Los usuarios están en schema_core.users
+-- 4. La vista public.clinics apunta a schema_medical.clinics
+-- 5. La vista public.clinic_staff apunta a schema_medical.clinic_staff
+-- ============================================================================
