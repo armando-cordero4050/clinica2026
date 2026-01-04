@@ -51,7 +51,7 @@ Estos usuarios fueron sincronizados automáticamente desde Odoo y representan lo
 
 ### Azure Interior
 - **Usuario:** `azure.Interior24@example.com`
-- **Password:** *(Debe ser establecida mediante "Reset Password" en la UI)*
+- **Password:** `Clinica5050!`
 - **Rol:** `clinic_admin`
 - **Clínica:** Azure Interior
 - **Puesto:** Administrador Clínica
@@ -64,6 +64,24 @@ Estos usuarios fueron sincronizados automáticamente desde Odoo y representan lo
 - **Clínica:** Deco Addict
 - **Puesto:** Administrador Clínica
 - **Estado:** ✅ Activo (sincronizado desde Odoo)
+
+---
+
+## Usuarios de Laboratorio
+
+### Admin Lab
+- **Usuario:** `admin.lab@a.com`
+- **Password:** Admin123!
+- **Rol:** `lab_admin`
+- **Puesto:** Administrador de Laboratorio
+- **Estado:** ✅ Activo
+
+### Staff Lab - Ingresos
+- **Usuario:** `ingresos1@a.com`
+- **Password:** `909080807070`
+- **Rol:** `courier` (Mensajero/Staff)
+- **Puesto:** Encargado de Ingresos
+- **Estado:** ✅ Activo
 
 ---
 

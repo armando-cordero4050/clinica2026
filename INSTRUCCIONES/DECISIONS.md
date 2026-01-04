@@ -50,6 +50,28 @@ Regla: si una decisión cambia, se agrega un nuevo ADR que la reemplace, nunca s
 **Decisión:** Presupuestos/facturas al paciente se manejan dentro de DentalFlow como “ficticias” (por ahora).  
 **Motivo:**
 - FEL futuro, hoy no depende de Odoo.
+
+---
+
+## Decision 11: Evolución Arquitectura V5 - Interfaz vía Esquema Public
+**Fecha:** 2026-02-05
+**Contexto:** Los módulos (Medical, Lab) tienen esquemas internos, pero el frontend y algunas integraciones requieren una visión unificada y simplificada.
+**Decisión:** 
+- Las tablas en el esquema `public` (ej: `users`, `orders`, `patients`) actúan como la interfaz de datos primaria para el frontend.
+- Se prefiere el uso de `public.users` sobre `public.profiles` para la gestión de identidad y roles.
+- Se introduce `public.app_config` como almacén centralizado para configuraciones globales (ej: Welcome Toast) accesibles vía RPC.
+**Racional:** Simplifica las queries de React, facilita la auditoría de RLS centralizada y desacopla la lógica interna de los módulos de la visualización.
+
+---
+
+## Decision 12: Resolución de Conflictos en PL/pgSQL
+**Fecha:** 2026-02-05
+**Contexto:** Errores recurrentes de ambigüedad en nombres de columnas (`id`).
+**Decisión:** 
+- Todas las funciones RPC que devuelvan tablas deben incluir obligatoriamente la directiva `#variable_conflict use_column`.
+- Es obligatorio el uso de aliases de tabla en todas las cláusulas `SELECT` y `JOIN`.
+**Racional:** Evita fallos críticos en producción al añadir nuevas columnas o variables con nombres comunes.
+
 **Impacto:**
 - Módulo financiero interno (budgets, payments, invoices_internal).
 

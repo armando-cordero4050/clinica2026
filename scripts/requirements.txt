@@ -1,0 +1,4 @@
+# Python dependencies for Odoo sync scripts
+python-dotenv==1.0.0
+supabase==2.9.1
+httpcore==1.0.7

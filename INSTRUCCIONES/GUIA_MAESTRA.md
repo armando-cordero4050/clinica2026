@@ -142,4 +142,35 @@ Usar siempre componentes de `@/components/ui/*`:
 *   **Icons:** Librería `lucide-react`.
 
 ---
+
+## 6. FLUJO DE TRABAJO DENTALFLOW (Paso a Paso)
+
+Este es el proceso lógico desde que un producto existe en Odoo hasta que la orden se entrega en la clínica.
+
+### 🏁 Fase 1: Configuración Masiva (Admin)
+1. **Sincronización Odoo:** El Admin presiona "Sincronizar Todo".
+   - Trae **Clientes** (Clínicas) y **Productos** (Servicios) con el 100% de sus campos.
+   - Normaliza datos (convierte nulos/false en `0`).
+2. **Definición de Precios:** La Clínica entra a su panel y asigna su precio de venta al paciente para cada servicio sincronizado.
+3. **Términos de Pago:** El sistema detecta si la clínica es `Cash` o `Credit` basado en Odoo.
+
+### 🛠️ Fase 2: Operación Médica (Clínica)
+4. **Ingreso de Paciente:** El doctor registra al paciente.
+5. **Creación de Orden:** El doctor crea una orden de laboratorio seleccionando un servicio (ej: Corona Zirconio).
+6. **Envío al Lab:** La orden viaja al esquema de laboratorio (`schema_lab.orders`) y aparece en el **KAMBA**.
+
+### 🏗️ Fase 3: Producción (Laboratorio)
+7. **Recepción:** El lab recibe los modelos/archivos digitales.
+8. **Producción (KAMBA):** La orden fluye por las etapas (Diseño -> Fresado -> Acabado).
+9. **Control de Calidad:** Se marca como lista para despacho.
+
+### 🚚 Fase 4: Despacho y Finanzas (Cierre)
+10. **Validación de Pago:**
+    - Si es **Crédito**: Se libera automáticamente para envío.
+    - Si es **Contado**: Se bloquea hasta que la clínica registre el pago.
+11. **Facturación Odoo:** El sistema genera la factura en Odoo automáticamente.
+12. **Entrega:** El mensajero (Logística) entrega la orden y marca el fin del ciclo.
+
+---
 **FIN DE LA GUÍA**
+

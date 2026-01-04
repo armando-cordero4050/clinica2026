@@ -1,0 +1,35 @@
+[
+  {
+    "id": 7,
+    "name": "Clinica 1",
+    "email": "clinica1@a1.com",
+    "phone": false,
+    "mobile": "909090909090",
+    "vat": "CF",
+    "street": "Clinica 1, zona 9 edificio reforma",
+    "city": "Guatemala",
+    "country_id": [
+      90,
+      "Guatemala"
+    ],
+    "property_payment_term_id": [
+      1,
+      "Immediate Payment"
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Clinica 2",
+    "email": "clinica2@clinica2.com",
+    "phone": false,
+    "mobile": "963825417",
+    "vat": "316487",
+    "street": "12 Av, 23 calle, Zona 4 Torre Medica, Nivel 10, Oficina 406",
+    "city": "guatemala",
+    "country_id": [
+      90,
+      "Guatemala"
+    ],
+    "property_payment_term_id": false
+  }
+]

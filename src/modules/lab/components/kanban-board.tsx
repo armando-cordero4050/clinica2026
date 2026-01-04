@@ -9,13 +9,19 @@ import { Button } from '@/components/ui/button'
 import { Calendar, User, Truck, Play, Pause, Clock } from 'lucide-react'
 
 // Kanban Columns Configuration
+// Kanban Columns Configuration (11 Stages Kamba)
 const COLUMNS = {
-  new: { title: 'New', color: 'bg-gray-100' },
-  design: { title: 'Design', color: 'bg-blue-50' },
-  milling: { title: 'Milling', color: 'bg-indigo-50' },
-  ceramic: { title: 'Ceramic', color: 'bg-purple-50' },
-  qc: { title: 'QC Check', color: 'bg-orange-50' },
-  ready: { title: 'Ready', color: 'bg-green-50' }
+  clinic_pending: { title: '1. Clínica', color: 'bg-gray-50' },
+  digital_picking: { title: '2. Digital', color: 'bg-blue-50' },
+  income_validation: { title: '3. Ingresos', color: 'bg-emerald-50' },
+  gypsum: { title: '4. Yesos', color: 'bg-amber-50' },
+  design: { title: '5. Diseño', color: 'bg-indigo-50' },
+  client_approval: { title: '6. Aprobación', color: 'bg-purple-50' },
+  nesting: { title: '7. Nesting', color: 'bg-orange-50' },
+  production_man: { title: '8. MAN', color: 'bg-pink-50' },
+  qa: { title: '9. QA', color: 'bg-cyan-50' },
+  billing: { title: '10. Facturar', color: 'bg-green-50' },
+  delivery: { title: '11. Delivery', color: 'bg-slate-50' }
 }
 
 // Timer Component

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
 import { OdooClient } from '@/lib/odoo/client'
 
 /**
@@ -99,7 +100,7 @@ export async function createSaleOrderInOdoo(orderData: {
         patient_id: orderData.patientId,
         patient_name: orderData.patientName,
         staff_id: orderData.staffId,
-        doctor_name: staff?.users?.name || 'Doctor',
+        doctor_name: (staff as any)?.users?.[0]?.name || (staff as any)?.users?.name || 'Doctor',
         status: 'new',
         due_date: orderData.dueDate,
         price: service.base_price,
@@ -251,10 +252,14 @@ export interface OrderInsert {
     patient_name: string
     doctor_id?: string
     items: string[] // List of service IDs
-    is_digital: boolean
-    delivery_info?: any
+    delivery_type: 'digital' | 'pickup' | 'shipping'
+    digital_files?: File[]
+    shipping_info?: {
+        courier: string
+        tracking_number: string
+    }
     notes?: string
-    estimated_delivery?: string // Date string
+    estimated_delivery?: string // Date string (auto-calculated, for reference)
     created_by?: string
 }
 
@@ -268,8 +273,9 @@ export async function createLabOrder(data: OrderInsert) {
 
     let clinicId = data.clinic_id
     if (!clinicId) {
+        // 1. Try to get from user's staff record
         const { data: memberData } = await supabase
-            .from('clinic_members')
+            .from('clinic_staff')
             .select('clinic_id')
             .eq('user_id', user.id)
             .single()
@@ -279,55 +285,114 @@ export async function createLabOrder(data: OrderInsert) {
         }
     }
 
-    if (!clinicId) {
-         return { success: false, message: 'No se pudo determinar la clínica del usuario' }
-    }
-
-    const payload = {
-        clinic_id: clinicId,
-        patient_id: data.patient_id,
-        patient_name: data.patient_name,
-        // doctor_name: ... (omitted, let's prefer IDs if possible or fetch from user)
-        status: 'new',
-        is_digital: data.is_digital,
-        delivery_info: data.delivery_info || {},
-        price: 0, // Placeholder
-        due_date: data.estimated_delivery,
-        created_at: new Date().toISOString()
-    }
-
-    const { data: newOrder, error: orderError } = await supabase
-        .from('orders')
-        .insert(payload)
-        .select()
-        .single()
-
-    if (orderError) {
-        console.error("Error creating lab order:", orderError)
-        return { success: false, message: orderError.message }
-    }
-
-    // Insert Items
-    if (data.items && data.items.length > 0) {
-        // NOTE: If service IDs are MOCKs (like 'srv_resin_1'), this will fail FK.
-        // In production, we need real service IDs.
-        // For now we attempt it.
-        const itemsPayload = data.items.map(itemId => ({
-            order_id: newOrder.id,
-            service_id: itemId,
-            quantity: 1,
-            unit_price: 0
-        }))
-
-        const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert(itemsPayload)
+    // 2. Fallback: Get from patient record
+    if (!clinicId && data.patient_id) {
+        const { data: patientData } = await supabase
+            .from('patients')
+            .select('clinic_id')
+            .eq('id', data.patient_id)
+            .single()
         
-        if (itemsError) {
-            console.error("Error inserting items (possibly mock IDs):", itemsError)
+        if (patientData) {
+            clinicId = patientData.clinic_id
         }
     }
 
+    if (!clinicId) {
+         return { success: false, message: 'No se pudo determinar la clínica asociada (Usuario o Paciente)' }
+    }
+
+    // Upload digital files to Supabase Storage (if any)
+    let digitalFilesUrls: any[] = []
+    if (data.delivery_type === 'digital' && data.digital_files && data.digital_files.length > 0) {
+        console.log('🔵 Uploading', data.digital_files.length, 'digital files...')
+        
+        for (const file of data.digital_files) {
+            const fileName = `${Date.now()}-${file.name}`
+            const filePath = `lab-orders/${clinicId}/${fileName}`
+            
+            // Convert File to ArrayBuffer for upload
+            const arrayBuffer = await file.arrayBuffer()
+            const buffer = new Uint8Array(arrayBuffer)
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('lab-files')
+                .upload(filePath, buffer, {
+                    contentType: file.type,
+                    upsert: false
+                })
+            
+            if (uploadError) {
+                console.error('🔴 Error uploading file:', uploadError)
+                return { success: false, message: `Error al subir archivo: ${file.name}` }
+            }
+            
+            // Get public URL
+            const { data: urlData } = supabase.storage
+                .from('lab-files')
+                .getPublicUrl(filePath)
+            
+            digitalFilesUrls.push({
+                name: file.name,
+                url: urlData.publicUrl,
+                size: file.size,
+                type: file.type,
+                uploaded_at: new Date().toISOString()
+            })
+        }
+        
+        console.log('✅ Files uploaded successfully:', digitalFilesUrls.length)
+    }
+
+    console.log('🔵 createLabOrder - Using RPC with params:', {
+        p_clinic_id: clinicId,
+        p_patient_id: data.patient_id,
+        p_patient_name: data.patient_name,
+        p_service_ids: data.items,
+        p_delivery_type: data.delivery_type,
+        p_digital_files: digitalFilesUrls,
+        p_shipping_info: data.shipping_info,
+        p_notes: data.notes
+    })
+
+    // Use RPC to create order (bypasses RLS with SECURITY DEFINER)
+    const { data: orderId, error: rpcError } = await supabase.rpc('create_lab_order_rpc', {
+        p_clinic_id: clinicId,
+        p_patient_id: data.patient_id,
+        p_patient_name: data.patient_name,
+        p_service_ids: data.items,
+        p_delivery_type: data.delivery_type,
+        p_digital_files: digitalFilesUrls,
+        p_shipping_info: data.shipping_info || null,
+        p_notes: data.notes || null
+    })
+
+    if (rpcError) {
+        console.error("🔴 Error creating lab order via RPC:", rpcError)
+        return { success: false, message: rpcError.message }
+    }
+
+    console.log('✅ Lab order created successfully, ID:', orderId)
+
     revalidatePath('/dashboard/medical/lab')
-    return { success: true, data: newOrder }
+    revalidatePath('/dashboard/medical/patients')
+    revalidatePath('/dashboard/lab')
+    return { success: true, data: { id: orderId } }
+}
+
+export async function getClinicOrders(clinicId: string) {
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+        .from('orders') // Uses public view
+        .select('*')
+        .eq('clinic_id', clinicId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching clinic orders:', error)
+        return []
+    }
+
+    return data || []
 }

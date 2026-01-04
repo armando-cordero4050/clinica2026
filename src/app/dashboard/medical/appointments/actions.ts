@@ -112,7 +112,12 @@ export async function createPatientInline(data: {
   console.log('[createPatientInline] Creating patient:', data)
 
   // Get current user's clinic_id
-  const { data: profile } = await supabase.rpc('get_my_profile')
+  // Get current user's clinic_id
+  const { data: profile } = await supabase
+    .from('clinic_staff')
+    .select('clinic_id')
+    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+    .single()
   
   if (!profile?.clinic_id) {
     console.error('[createPatientInline] No clinic_id found for user')
@@ -219,7 +224,11 @@ export async function updateAppointmentStatus(id: string, status: string) {
 export async function getCurrentDoctor(): Promise<Doctor | null> {
   const supabase = await createClient()
   
-  const { data: profile } = await supabase.rpc('get_my_profile')
+  const { data: profile } = await supabase
+    .from('clinic_staff')
+    .select('*')
+    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+    .single()
   
   if (!profile || !['clinic_doctor', 'doctor'].includes(profile.role)) {
     return null
@@ -285,7 +294,13 @@ export async function createService(data: {
   const supabase = await createClient()
   
   // Get current user's clinic_id
-  const { data: profile } = await supabase.rpc('get_my_profile')
+  // Get current user's clinic_id
+  const { data: profile } = await supabase
+    .schema('schema_medical')
+    .from('clinic_staff')
+    .select('clinic_id')
+    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+    .single()
   
   if (!profile?.clinic_id) {
     return { success: false, message: 'No se pudo identificar la clínica' }
@@ -293,7 +308,7 @@ export async function createService(data: {
 
   // Create service in lab_services first
   const { data: newService, error: serviceError } = await supabase
-    .from('lab_services')
+    .from('services')
     .insert({
       name: data.name.trim(),
       description: data.description?.trim() || null,
@@ -353,7 +368,12 @@ export async function createPatientWithGuardian(data: {
   const supabase = await createClient()
   
   // Get current user's clinic_id
-  const { data: profile } = await supabase.rpc('get_my_profile')
+  // Get current user's clinic_id
+  const { data: profile } = await supabase
+    .from('clinic_staff')
+    .select('clinic_id')
+    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+    .single()
   
   if (!profile?.clinic_id) {
     return { success: false, message: 'No se pudo identificar la clínica del usuario' }

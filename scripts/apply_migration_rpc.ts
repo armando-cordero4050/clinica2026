@@ -45,8 +45,7 @@ async function run() {
   const { data, error } = await supabase.rpc('exec_sql', { sql_query: sql });
 
   if (error) {
-    // If exec_sql missing, try to create it? No, that requires SQL.
-    console.error('Error executing SQL via RPC:', error);
+    console.error('Error executing SQL via RPC:', JSON.stringify(error, null, 2));
     // If the error is "function not found", we are stuck and user needs to apply manually first.
     if (error.code === '42883' || error.message.includes('function') && error.message.includes('not found')) {
         console.error('CRITICAL: functionality to run SQL via Agent is missing (schema_core.exec_sql).');

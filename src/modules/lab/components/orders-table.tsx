@@ -23,7 +23,7 @@ export function LabOrdersTable({ orders }: OrdersTableProps) {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000) // Update every minute
+    const timer = setInterval(() => setNow(new Date()), 1000) // Update every second for real-time countdown
     return () => clearInterval(timer)
   }, [])
 
@@ -33,21 +33,43 @@ export function LabOrdersTable({ orders }: OrdersTableProps) {
     
     if (diff < 0) return { text: 'ATRASADO', color: 'text-red-600 font-bold' }
     
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const days = Math.floor(hours / 24)
+    const totalSeconds = Math.floor(diff / 1000)
+    const days = Math.floor(totalSeconds / (24 * 60 * 60))
+    const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60))
+    const minutes = Math.floor((totalSeconds % (60 * 60)) / 60)
+    const seconds = totalSeconds % 60
     
-    if (days > 0) return { text: `${days}d ${hours % 24}h restantes`, color: 'text-green-600' }
-    return { text: `${hours}h restantes`, color: 'text-orange-600 font-medium' }
+    if (days > 0) {
+      return { 
+        text: `${days}d ${hours}h ${minutes}m ${seconds}s`, 
+        color: 'text-green-600 font-mono' 
+      }
+    }
+    if (hours > 0) {
+      return { 
+        text: `${hours}h ${minutes}m ${seconds}s`, 
+        color: 'text-orange-600 font-medium font-mono' 
+      }
+    }
+    return { 
+      text: `${minutes}m ${seconds}s`, 
+      color: 'text-red-500 font-bold font-mono' 
+    }
   }
 
   const getStatusBadge = (status: string) => {
      const config: Record<string, { label: string, color: string }> = {
-        'new': { label: 'Nuevo', color: 'bg-blue-100 text-blue-700' },
+        'clinic_pending': { label: 'Pendiente Clínica', color: 'bg-slate-100 text-slate-700' },
+        'digital_picking': { label: 'Picking Digital', color: 'bg-blue-100 text-blue-700' },
+        'income_validation': { label: 'Validación Ingreso', color: 'bg-cyan-100 text-cyan-700' },
+        'gypsum': { label: 'Yeso', color: 'bg-amber-100 text-amber-700' },
         'design': { label: 'Diseño', color: 'bg-purple-100 text-purple-700' },
-        'milling': { label: 'Fresado', color: 'bg-indigo-100 text-indigo-700' },
-        'ceramic': { label: 'Cerámica', color: 'bg-pink-100 text-pink-700' },
-        'qc': { label: 'Control Calidad', color: 'bg-orange-100 text-orange-700' },
-        'delivered': { label: 'Finalizado', color: 'bg-green-100 text-green-700' },
+        'client_approval': { label: 'Aprobación Cliente', color: 'bg-indigo-100 text-indigo-700' },
+        'nesting': { label: 'Nesting', color: 'bg-violet-100 text-violet-700' },
+        'production_man': { label: 'Producción Manual', color: 'bg-pink-100 text-pink-700' },
+        'qa': { label: 'Control Calidad', color: 'bg-orange-100 text-orange-700' },
+        'billing': { label: 'Facturación', color: 'bg-emerald-100 text-emerald-700' },
+        'delivery': { label: 'Entrega', color: 'bg-green-100 text-green-700' },
      }
      const s = config[status] || { label: status, color: 'bg-gray-100' }
      return <Badge className={`${s.color} border-none`}>{s.label}</Badge>

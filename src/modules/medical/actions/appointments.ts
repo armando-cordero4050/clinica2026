@@ -18,66 +18,40 @@ export interface AppointmentInsert {
 export async function createAppointment(data: AppointmentInsert) {
     const supabase = await createClient()
 
-    // Get current user to determine clinic (optional logic if strict RLS is used with session)
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-        return { success: false, message: 'Usuario no autenticado' }
-    }
-
-    // Explicitly get clinic_id for the current user if not provided
-    // This assumes specific RLS setups or context helpers usually.
-    // Ideally, RLS handles `auth.uid()` -> clinic check, but for INSERT we often need to provide the clinic_id
-    // linked to the user. Let's fetch it safely.
-    let clinicId = data.clinic_id
-    if (!clinicId) {
-        const { data: memberData } = await supabase
-            .from('clinic_members')
-            .select('clinic_id')
-            .eq('user_id', user.id)
-            .single()
-        
-        if (memberData) {
-            clinicId = memberData.clinic_id
-        }
-    }
-
-    if (!clinicId) {
-         return { success: false, message: 'No se pudo determinar la clínica del usuario' }
-    }
-
-    const payload = {
-        ...data,
-        clinic_id: clinicId,
-        created_by: user.id
-    }
-
-    const { data: result, error } = await supabase
-        .from('schema_medical.appointments') // Assuming simple text table access for now, or use public view
-        .insert(payload)
-        .select()
-        .single()
-
-    // Fallback: try public view if schema specific fails due to library config
-    if (error && error.code === '42P01') { // undefined_table
-         const { data: resultPublic, error: errorPublic } = await supabase
-            .from('appointments') // public view
-            .insert(payload)
-            .select()
-            .single()
-        
-         if (errorPublic) {
-            console.error("Error creating appointment (public view):", errorPublic)
-            return { success: false, message: errorPublic.message }
-         }
-         revalidatePath('/dashboard/medical/appointments')
-         return { success: true, data: resultPublic }
-    }
+    // Use RPC for creation as it handles overlaps and clinic resolution internally
+    // but we can still resolve clinic here for extra safety or if RPC fails
+    const { data: newId, error } = await supabase.rpc('create_appointment_rpc', {
+        p_patient_id: data.patient_id,
+        p_doctor_id: data.doctor_id,
+        p_title: data.title,
+        p_start: data.start_time,
+        p_end: data.end_time,
+        p_appointment_type: data.type || 'consultation',
+        p_reason: data.details?.reason || null
+    })
 
     if (error) {
-        console.error("Error creating appointment:", error)
+        console.error("Error creating appointment via RPC:", error)
         return { success: false, message: error.message }
     }
 
     revalidatePath('/dashboard/medical/appointments')
-    return { success: true, data: result }
+    return { success: true, data: { id: newId } }
+}
+
+export async function getAppointments(startDate: Date | string, endDate: Date | string) {
+    const supabase = await createClient()
+
+    // Use RPC which bypasses RLS and handles schema
+    const { data, error } = await supabase.rpc('get_appointments_rpc', {
+        p_start: new Date(startDate).toISOString(),
+        p_end: new Date(endDate).toISOString()
+    })
+
+    if (error) {
+        console.error("Error fetching appointments:", JSON.stringify(error, null, 2))
+        return { success: false, message: error.message }
+    }
+
+    return { success: true, data }
 }

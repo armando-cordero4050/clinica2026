@@ -20,7 +20,7 @@ export default async function LabKambaPage() {
              Kamba Logística
              <Badge variant="outline" className="text-[10px] uppercase bg-white">{userRole}</Badge>
           </h1>
-          <p className="text-muted-foreground mt-1">Gestión global de producción en 11 etapas.</p>
+          <p className="text-muted-foreground mt-1">Gestión global de producción en 10 etapas.</p>
         </div>
       </div>
 

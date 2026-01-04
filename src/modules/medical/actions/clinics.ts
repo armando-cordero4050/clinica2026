@@ -272,9 +272,32 @@ export async function getClinicDetails(clinicId: string) {
     })
   )
 
+  // Get Real Counts
+  const { count: ordersCount } = await supabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('clinic_id', clinicId)
+
+  const { count: patientsCount } = await supabase
+    .from('patients')
+    .select('*', { count: 'exact', head: true })
+    .eq('clinic_id', clinicId)
+
+  const { data: paymentsData } = await supabase
+    .from('payments')
+    .select('amount')
+    .eq('clinic_id', clinicId)
+
+  const totalPayments = (paymentsData || []).reduce((sum, p) => sum + Number(p.amount), 0)
+
   return {
     clinic,
-    staff: staffWithUsers
+    staff: staffWithUsers,
+    stats: {
+      ordersCount: ordersCount || 0,
+      patientsCount: patientsCount || 0,
+      totalPayments: totalPayments
+    }
   }
 }
 

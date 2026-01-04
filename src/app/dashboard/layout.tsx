@@ -32,10 +32,11 @@ import {
   Receipt,
   Wallet,
   Building,
-  Banknote
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { WelcomeToast } from '@/components/ui/welcome-toast'
+import { useWelcomeMessage } from '@/hooks/use-welcome-message'
 
 export default function DashboardLayout({
   children,
@@ -48,6 +49,9 @@ export default function DashboardLayout({
   const [activeModules, setActiveModules] = useState<string[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // Welcome Message Logic
+  const { isVisible, config, userName, onClose } = useWelcomeMessage()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,7 +91,16 @@ export default function DashboardLayout({
   const isClinicUser = ['clinic_admin', 'clinic_doctor', 'clinic_staff', 'clinic_receptionist'].includes(userRole || '')
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100">
+      <WelcomeToast 
+        isVisible={isVisible}
+        style={config.style}
+        variant={config.variant}
+        title={config.title}
+        subtitle={config.subtitle}
+        userName={userName}
+        onClose={onClose}
+      />
       <aside 
         className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col ${
           isSidebarOpen ? 'w-64' : 'w-20'
@@ -100,7 +113,7 @@ export default function DashboardLayout({
           </Button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-4">
           {loading ? (
              <div className="flex justify-center p-4"><Loader2 className="animate-spin h-6 w-6 text-blue-500"/></div>
           ) : (
@@ -133,7 +146,15 @@ export default function DashboardLayout({
                   <NavItem item={{ name: 'Correlativos', href: '/dashboard/settings/correlatives', icon: Hash }} pathname={pathname} isOpen={isSidebarOpen} />
                   <NavItem item={{ name: 'Tiempos (SLA)', href: '/dashboard/settings/sla', icon: Timer }} pathname={pathname} isOpen={isSidebarOpen} />
                   <NavItem item={{ name: 'Servicios', href: '/dashboard/admin/services', icon: Package }} pathname={pathname} isOpen={isSidebarOpen} />
-                  <NavItem item={{ name: 'Odoo Sync', href: '/dashboard/settings/odoo', icon: Truck }} pathname={pathname} isOpen={isSidebarOpen} />
+                  {isPlatformAdmin && <NavItem item={{ name: 'Odoo Sync', href: '/dashboard/settings/odoo', icon: Truck }} pathname={pathname} isOpen={isSidebarOpen} />}
+                </div>
+              )}
+
+              {/* LOGISTICS MODULE */}
+              {(userRole === 'courier' || isPlatformAdmin || isLabUser) && (
+                <div className="space-y-1 mt-4">
+                  <p className={`text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 ${!isSidebarOpen && 'hidden'}`}>Logística</p>
+                  <NavItem item={{ name: 'Rutas', href: '/dashboard/logistics', icon: Truck }} pathname={pathname} isOpen={isSidebarOpen} />
                 </div>
               )}
 
@@ -185,13 +206,13 @@ export default function DashboardLayout({
                   {/* Laboratory Orders */}
                   <div className="space-y-1 mt-4">
                     <p className={`text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 ${!isSidebarOpen && 'hidden'}`}>Laboratorios</p>
-                    <NavItem item={{ name: 'Órdenes de Lab', href: '/dashboard/medical/lab-orders', icon: Package }} pathname={pathname} isOpen={isSidebarOpen} />
+                    <NavItem item={{ name: 'Órdenes de Lab', href: '/dashboard/medical/orders', icon: Package }} pathname={pathname} isOpen={isSidebarOpen} />
                   </div>
                 </>
               )}
 
-              {/* SHARED SETTINGS (Visible to Admins only) */}
-              {(isPlatformAdmin || userRole === 'clinic_admin' || userRole === 'lab_admin') && (
+              {/* SHARED SETTINGS (Visible to Admins only, NOT lab users) */}
+              {(isPlatformAdmin || userRole === 'clinic_admin') && (
                 <div className="pt-4 mt-4 border-t border-gray-100 space-y-1">
                   <NavItem item={{ name: 'Configuración', href: '/dashboard/settings', icon: Settings }} pathname={pathname} isOpen={isSidebarOpen} />
                 </div>
@@ -200,8 +221,8 @@ export default function DashboardLayout({
               {/* PATIENT / GUEST FALLBACK */}
               {(!isLabUser && !isClinicUser && !isPlatformAdmin) && (
                 <div className="space-y-1">
-                   <p className={`text-[10px] font-bold text-orange-400 uppercase tracking-wider mb-2 ${!isSidebarOpen && 'hidden'}`}>Acceso Limitado</p>
-                   <NavItem item={{ name: 'Información Básica', href: '/dashboard', icon: LayoutDashboard }} pathname={pathname} isOpen={isSidebarOpen} />
+                    <p className={`text-[10px] font-bold text-orange-400 uppercase tracking-wider mb-2 ${!isSidebarOpen && 'hidden'}`}>Acceso Limitado</p>
+                    <NavItem item={{ name: 'Información Básica', href: '/dashboard', icon: LayoutDashboard }} pathname={pathname} isOpen={isSidebarOpen} />
                 </div>
               )}
             </>
@@ -236,7 +257,7 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1">
         <div className="p-8">
           {children}
         </div>

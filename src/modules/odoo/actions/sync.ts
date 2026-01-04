@@ -2,6 +2,34 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { OdooClient, OdooConfig } from '@/lib/odoo/client'
+import { logSyncStart, logSyncSuccess, logSyncError } from '../utils/sync-logger'
+
+
+/**
+ * Universal Odoo Data Normalizer
+ * Converts Odoo's 'false' values to empty strings or 0 to avoid frontend crashes
+ * and ensures data consistency in Supabase.
+ */
+function normalizeOdooValue(value: unknown, targetType: 'string' | 'number' | 'boolean' = 'string'): any {
+  if (value === false || value === null || value === undefined) {
+    if (targetType === 'number') return 0
+    if (targetType === 'boolean') return false
+    return ""
+  }
+  return value
+}
+
+function normalizeObject(obj: unknown): any {
+  if (!obj || typeof obj !== 'object') return normalizeOdooValue(obj)
+  if (Array.isArray(obj)) return obj.map(normalizeObject)
+  
+  const normalized: Record<string, any> = {}
+  const source = obj as Record<string, any>
+  for (const key in source) {
+    normalized[key] = normalizeObject(source[key])
+  }
+  return normalized
+}
 
 /**
  * Get Odoo configuration from database
@@ -43,271 +71,136 @@ export async function getOdooConfig(): Promise<OdooConfig | null> {
 /**
  * Test Odoo connection
  */
-export async function testOdooConnection(): Promise<{ success: boolean; message: string; uid?: number }> {
+export async function testOdooConnection() {
   try {
     const config = await getOdooConfig()
     if (!config) {
       return { success: false, message: 'No hay configuración de Odoo activa' }
     }
 
-    const client = new OdooClient(config)
-    const uid = await client.authenticate()
-
-    return { 
-      success: true, 
-      message: `Conexión exitosa. UID: ${uid}`,
-      uid 
+    const odoo = new OdooClient(config)
+    const uid = await odoo.authenticate()
+    
+    if (uid) {
+      return { success: true, message: `Conexión exitosa. UID: ${uid}` }
+    } else {
+      return { success: false, message: 'Autenticación fallida' }
     }
   } catch (error: any) {
-    return { 
-      success: false, 
-      message: `Error de conexión: ${error.message}` 
-    }
+    return { success: false, message: `Error de conexión: ${error.message}` }
   }
 }
 
 /**
- * Sync customers from Odoo
+ * Sync Customers from Odoo (Phase 2: Full Field Sync + Payment Policy)
  */
-export async function syncCustomersFromOdoo(): Promise<{ success: boolean; count: number; message: string }> {
+export async function syncCustomersFromOdoo() {
+  await logSyncStart('customers')
+  
   try {
     const config = await getOdooConfig()
     if (!config) {
-      return { success: false, count: 0, message: 'No hay configuración de Odoo activa' }
+      await logSyncError('customers', { message: 'No hay configuración de Odoo activa' })
+      return { success: false, message: 'No hay configuración de Odoo activa' }
     }
 
-    const client = new OdooClient(config)
-    await client.authenticate()
+    const odoo = new OdooClient(config)
+    await odoo.authenticate()
 
-    // Get enabled fields for customers
     const supabase = await createClient()
-    const { data: fieldMappings } = await supabase.rpc('get_odoo_field_mappings', {
-      p_module: 'customers'
-    })
 
-    const enabledFields = fieldMappings
-      ?.filter((f: any) => f.is_enabled)
-      .map((f: any) => f.odoo_field_name) || ['id', 'name', 'email']
+    // Fetch ALL partners with customer_rank > 0 (100% of fields)
+    const partners = await odoo.searchRead('res.partner', [['customer_rank', '>', 0]], { 
+      fields: [],  // Empty = ALL fields
+      limit: 100 
+    }) as any[]
 
-    // Search and read partners (customers)
-    const partners = await client.searchRead('res.partner', {
-      domain: [['customer_rank', '>', 0]], // Only customers
-      fields: enabledFields,
-      limit: 100
-    })
-
-    // Store in database
     let syncedCount = 0
-    for (const partner of partners) {
-      const { error } = await supabase
-        .from('odoo_customers')
-        .upsert({
-          odoo_partner_id: partner.id,
-          name: partner.name,
-          email: partner.email || null,
-          phone: partner.phone || null,
-          vat: partner.vat || null,
-          street: partner.street || null,
-          city: partner.city || null,
-          country: partner.country_id ? partner.country_id[1] : null,
-          is_company: partner.is_company || false,
-          raw_data: partner,
-          last_synced: new Date().toISOString()
-        }, {
-          onConflict: 'odoo_partner_id'
-        })
 
-      // NEW: Promote to Medical Clinic automatically
+    for (const partner of partners) {
+      // FILTER: Skip internal Odoo users (Administrator, etc.)
+      // Odoo internal users typically have IDs 1-6 and names like "Administrator", "OdooBot", etc.
+      if (partner.id <= 6 || partner.name === 'Administrator' || partner.name === 'OdooBot') {
+        console.log(`⏭️  Skipping internal Odoo user: ${partner.name} (ID: ${partner.id})`)
+        continue
+      }
+      
+      // Normalize the entire partner object
+      const normalizedPartner = normalizeObject(partner)
+      
+      // Payment Policy Detection (Phase 2)
+      const pt = partner.property_payment_term_id
+      const ptId = Array.isArray(pt) ? pt[0] : null
+      const ptName = Array.isArray(pt) ? pt[1] : 'Immediate Payment'
+      const policy = (ptName.toLowerCase().includes('immediate') || ptId === 1 || !ptId) 
+        ? 'cash' 
+        : 'credit'
+
+      // 3. Promote to Clinic via RPC (Atomic update of both schemas)
+      // This single call ensures atomicity and consistency between core and medical schemas
       const { error: rpcError } = await supabase.rpc('sync_clinic_from_odoo', {
           p_odoo_id: partner.id,
-          p_name: partner.name,
-          p_email: partner.email || null,
-          p_phone: partner.phone || null,
-          p_address: `${partner.street || ''} ${partner.city || ''}`.trim(),
-          p_contact_name: partner.name
+          p_name: normalizeOdooValue(partner.name),
+          p_email: normalizeOdooValue(partner.email),
+          p_phone: normalizeOdooValue(partner.phone),
+          p_mobile: normalizeOdooValue(partner.mobile),
+          p_vat: normalizeOdooValue(partner.vat),
+          p_street: normalizeOdooValue(partner.street),
+          p_city: normalizeOdooValue(partner.city),
+          p_country_id: partner.country_id ? (Array.isArray(partner.country_id) ? partner.country_id[0] : partner.country_id) : null,
+          p_payment_term_id: ptId,
+          p_payment_term_name: ptName,
+          p_payment_policy: policy,
+          p_raw_data: normalizedPartner
       })
 
       if (rpcError) {
-        console.error(`Error promoting Odoo partner ${partner.id} to clinic:`, rpcError)
+        console.error(`❌ Error sincronizando cliente ${partner.id} (${partner.name}):`)
+        console.error('Error completo:', JSON.stringify(rpcError, null, 2))
+        console.error('Código:', rpcError.code)
+        console.error('Mensaje:', rpcError.message)
+        console.error('Detalles:', rpcError.details)
+        console.error('Hint:', rpcError.hint)
+        
+        await logSyncError('customers', rpcError, `Error sincronizando cliente ${partner.id} (${partner.name})`)
       } else {
         syncedCount++
         
-        // ALSO: Create staff record for the main partner itself if it has an email
+        // 4. Auto-staff Promotion (Same logic but with cleaned data)
         const safeEmail = (typeof partner.email === 'string' && partner.email) ? partner.email : null
         
-        console.log(`Checking auto-staff promotion for ${partner.name}: Email found = ${!!safeEmail}`)
-        
         if (safeEmail) {
-          console.log(`Auto-promoting ${partner.name} as clinic staff member...`)
-          const { error: staffRpcError } = await supabase.rpc('sync_staff_member_from_odoo', {
+          await supabase.rpc('sync_staff_member_from_odoo', {
             p_odoo_contact_id: partner.id,
             p_clinic_odoo_id: partner.id, 
             p_name: partner.name,
             p_email: safeEmail,
-            p_job_position: 'Administrador Clínica',
-            p_phone: (typeof partner.phone === 'string' ? partner.phone : null),
-            p_mobile: (typeof partner.mobile === 'string' ? partner.mobile : null),
-            p_raw_data: partner
+            p_job_position: normalizeOdooValue(partner.function) || 'Administrador Clínica',
+            p_phone: normalizeOdooValue(partner.phone),
+            p_mobile: normalizeOdooValue(partner.mobile),
+            p_raw_data: normalizedPartner
           })
-
-          if (staffRpcError) {
-            console.error(`Error auto-promoting ${partner.name} to staff:`, staffRpcError)
-          } else {
-            console.log(`Successfully promoted ${partner.name} to staff member.`)
-          }
         }
       }
     }
 
-    // Log sync
-    await supabase.from('odoo_sync_log').insert({
-      module: 'customers',
-      operation: 'import',
-      status: 'success',
-      records_processed: syncedCount,
-      records_failed: partners.length - syncedCount,
-      completed_at: new Date().toISOString()
-    })
-
+    await logSyncSuccess('customers', syncedCount, partners.length - syncedCount)
+    
     return { 
       success: true, 
       count: syncedCount, 
       message: `${syncedCount} clientes sincronizados correctamente` 
     }
   } catch (error: any) {
-    // Log error
-    const supabase = await createClient()
-    await supabase.from('odoo_sync_log').insert({
-      module: 'customers',
-      operation: 'import',
-      status: 'error',
-      records_processed: 0,
-      error_message: error.message,
-      completed_at: new Date().toISOString()
-    })
-
-    return { 
-      success: false, 
-      count: 0, 
-      message: `Error: ${error.message}` 
-    }
+    await logSyncError('customers', error, 'Error general en sincronización')
+    return { success: false, message: `Error: ${error.message}` }
   }
 }
 
 /**
- * Sync products from Odoo
+ * Sync products moved to ./sync-products.ts
  */
-export async function syncProductsFromOdoo(): Promise<{ success: boolean; count: number; message: string }> {
-  try {
-    const config = await getOdooConfig()
-    if (!config) {
-      return { success: false, count: 0, message: 'No hay configuración de Odoo activa' }
-    }
 
-    const client = new OdooClient(config)
-    await client.authenticate()
-
-    // Get enabled fields for products
-    const supabase = await createClient()
-    const { data: fieldMappings } = await supabase.rpc('get_odoo_field_mappings', {
-      p_module: 'products'
-    })
-
-    const enabledFields = fieldMappings
-      ?.filter((f: any) => f.is_enabled)
-      .map((f: any) => f.odoo_field_name) || ['id', 'name', 'list_price', 'sale_delay']
-
-    // Ensure sale_delay is always requested even if not explicitly enabled in mappings
-    if (!enabledFields.includes('sale_delay')) enabledFields.push('sale_delay')
-
-    // Search and read products
-    const products = await client.searchRead('product.product', {
-      domain: [['sale_ok', '=', true]], // Only products available for sale
-      fields: enabledFields,
-      limit: 200
-    })
-
-    // Store in database (schema_lab.services)
-    let syncedCount = 0
-    for (const product of products) {
-      // Basic category mapping logic (can be improved)
-      let category = 'fija' // Default
-      const odooCategoryName = product.categ_id ? product.categ_id[1].toLowerCase() : ''
-      if (odooCategoryName.includes('removible')) category = 'removible'
-      if (odooCategoryName.includes('ortodoncia')) category = 'ortodoncia'
-      if (odooCategoryName.includes('implante')) category = 'implantes'
-
-      // Clean image URL or use placeholder
-      const imageUrl = (typeof product.image_128 === 'string' && product.image_128)
-        ? `data:image/png;base64,${product.image_128}`
-        : null
-
-      // SLA Logic: Map Odoo's 'sale_delay' (Lead Time) to hours
-      // sale_delay is in days. Default to 3 days if not set or false.
-      const odooLeadTimeDays = (typeof product.sale_delay === 'number') ? product.sale_delay : 
-                               (typeof product.sale_delay === 'string' ? Number(product.sale_delay) : 3)
-      
-      const effectiveLeadTime = odooLeadTimeDays > 0 ? odooLeadTimeDays : 3
-      const slaHours = Math.round(effectiveLeadTime * 24)
-
-      // Handle null/false from Odoo for string fields
-      const safeCode = (typeof product.default_code === 'string' && product.default_code) ? product.default_code : `ODOO-${product.id}`
-      const safeDescription = (typeof product.description_sale === 'string' && product.description_sale) ? product.description_sale : product.name
-
-      const { error } = await supabase.rpc('sync_service_from_odoo', {
-        p_odoo_id: product.id,
-        p_code: safeCode,
-        p_name: product.name,
-        p_category: category,
-        p_cost_price_gtq: Number(product.standard_price) || 0,
-        p_cost_price_usd: (Number(product.standard_price) || 0) / 7.8,
-        p_base_price: Number(product.list_price) || 0,
-        p_image_url: imageUrl,
-        p_description: safeDescription,
-        p_turnaround_days: effectiveLeadTime,
-        p_is_active: true,
-        p_sla_hours: slaHours,
-        p_sla_minutes: 0
-      })
-
-      if (!error) syncedCount++
-      else console.error(`Error syncing product ${product.id}:`, error)
-    }
-
-    // Log sync
-    await supabase.from('odoo_sync_log').insert({
-      module: 'products',
-      operation: 'import',
-      status: 'success',
-      records_processed: syncedCount,
-      records_failed: products.length - syncedCount,
-      completed_at: new Date().toISOString()
-    })
-
-    return { 
-      success: true, 
-      count: syncedCount, 
-      message: `${syncedCount} productos sincronizados correctamente` 
-    }
-  } catch (error: any) {
-    // Log error
-    const supabase = await createClient()
-    await supabase.from('odoo_sync_log').insert({
-      module: 'products',
-      operation: 'import',
-      status: 'error',
-      records_processed: 0,
-      error_message: error.message,
-      completed_at: new Date().toISOString()
-    })
-
-    return { 
-      success: false, 
-      count: 0, 
-      message: `Error: ${error.message}` 
-    }
-  }
-}
 
 /**
  * Sync sales orders from Odoo (sale.order)
@@ -325,16 +218,20 @@ export async function syncSalesFromOdoo(): Promise<{ success: boolean; count: nu
     const supabase = await createClient()
 
     // Search and read sales orders
+    // PHASE 2: Request ALL fields ([]) for full sync
     const orders = await client.searchRead('sale.order', {
       domain: [['state', 'in', ['sale', 'done']]], 
-      fields: ['id', 'name', 'date_order', 'amount_total', 'partner_id', 'state', 'invoice_status'],
+      fields: [], 
       limit: 100
     })
 
     let syncedCount = 0
     for (const order of orders) {
-      // For now, we just log them in the system or placeholder sync
-      // In a real scenario, we would map these to schema_lab.orders or a dedicated odoo_sales table
+      // Normalization
+      const _normalizedOrder = normalizeObject(order)
+      
+      // For now, we just count them. 
+      // TODO: Implement sync_sale_from_odoo RPC if needed for a dedicated table
       syncedCount++
     }
 
@@ -417,26 +314,29 @@ export async function syncInvoicesFromOdoo(): Promise<{ success: boolean; count:
     const supabase = await createClient()
 
     // Search and read invoices (account.move)
+    // PHASE 2: Request ALL fields ([])
     const invoices = await client.searchRead('account.move', {
       domain: [['move_type', '=', 'out_invoice'], ['state', '=', 'posted']], 
-      fields: ['id', 'name', 'date', 'invoice_date_due', 'amount_total', 'amount_residual', 'currency_id', 'state', 'payment_state', 'partner_id'],
+      fields: [], 
       limit: 100
     })
 
     let syncedCount = 0
     for (const inv of invoices) {
+      const normalizedInv = normalizeObject(inv)
+      
       const { error: rpcError } = await supabase.rpc('sync_invoice_from_odoo', {
         p_odoo_id: inv.id,
         p_invoice_number: inv.name,
         p_date: inv.date,
         p_due_date: inv.invoice_date_due || inv.date,
-        p_total_amount: inv.amount_total || 0,
-        p_amount_residual: inv.amount_residual || 0,
+        p_total_amount: Number(inv.amount_total) || 0,
+        p_amount_residual: Number(inv.amount_residual) || 0,
         p_currency: inv.currency_id ? inv.currency_id[1] : 'GTQ',
         p_status: inv.state,
         p_payment_state: inv.payment_state,
         p_odoo_partner_id: inv.partner_id ? inv.partner_id[0] : null,
-        p_raw_data: inv
+        p_raw_data: normalizedInv
       })
 
       if (!rpcError) syncedCount++
@@ -508,9 +408,10 @@ export async function syncStaffFromOdoo(): Promise<{ success: boolean; count: nu
     // 2. For each clinic, fetch its contacts (staff)
     for (const clinic of clinics) {
       console.log(`Fetching contacts for clinic: ${clinic.name} (Odoo ID: ${clinic.odoo_partner_id})`)
+      // PHASE 2: Request ALL fields ([])
       const contacts = await client.searchRead('res.partner', {
-        domain: [['parent_id', '=', clinic.odoo_partner_id]], // Child contacts
-        fields: ['id', 'name', 'email', 'function', 'phone', 'mobile', 'title'],
+        domain: [['parent_id', '=', clinic.odoo_partner_id]], 
+        fields: [],
         limit: 50
       })
 
@@ -522,15 +423,17 @@ export async function syncStaffFromOdoo(): Promise<{ success: boolean; count: nu
           continue
         }
 
+        const normalizedContact = normalizeObject(contact)
+
         const { error: rpcError } = await supabase.rpc('sync_staff_member_from_odoo', {
           p_odoo_contact_id: contact.id,
           p_clinic_odoo_id: clinic.odoo_partner_id,
           p_name: contact.name,
           p_email: contact.email,
-          p_job_position: contact.function || null,
-          p_phone: contact.phone || null,
-          p_mobile: contact.mobile || null,
-          p_raw_data: contact
+          p_job_position: normalizeOdooValue(contact.function) || null,
+          p_phone: normalizeOdooValue(contact.phone),
+          p_mobile: normalizeOdooValue(contact.mobile),
+          p_raw_data: normalizedContact
         })
 
         if (!rpcError) {

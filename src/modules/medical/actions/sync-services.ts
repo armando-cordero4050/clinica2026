@@ -29,8 +29,8 @@ export async function syncServicesFromOdoo(clinicId: string) {
     })
 
   if (logError || !logId) {
-    console.error('Error creating sync log:', logError)
-    return { success: false, message: 'Error al iniciar sincronización' }
+    console.error('[ServiceSync] Error creating sync log:', JSON.stringify(logError, null, 2))
+    return { success: false, message: `Error al iniciar sincronización: ${logError?.message || 'Unknown error'}` }
   }
 
   try {
@@ -134,7 +134,8 @@ export async function syncServicesFromOdoo(clinicId: string) {
       }
     }
 
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as Error
     // Update sync log as failed
     await supabase.rpc('update_sync_log', {
       p_log_id: logId,

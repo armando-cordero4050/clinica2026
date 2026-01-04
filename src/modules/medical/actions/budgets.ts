@@ -23,8 +23,9 @@ export async function createBudget(data: BudgetInsert) {
 
     let clinicId = data.clinic_id
     if (!clinicId) {
+        // 1. Try to get from user's staff record
         const { data: memberData } = await supabase
-            .from('clinic_members')
+            .from('clinic_staff')
             .select('clinic_id')
             .eq('user_id', user.id)
             .single()
@@ -34,8 +35,21 @@ export async function createBudget(data: BudgetInsert) {
         }
     }
 
+    // 2. Fallback: Get from patient record
+    if (!clinicId && data.patient_id) {
+        const { data: patientData } = await supabase
+            .from('patients')
+            .select('clinic_id')
+            .eq('id', data.patient_id)
+            .single()
+        
+        if (patientData) {
+            clinicId = patientData.clinic_id
+        }
+    }
+
     if (!clinicId) {
-         return { success: false, message: 'No se pudo determinar la clínica del usuario' }
+         return { success: false, message: 'No se pudo determinar la clínica asociada (Usuario o Paciente)' }
     }
 
     const payload = {

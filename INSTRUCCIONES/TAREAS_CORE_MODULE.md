@@ -3,6 +3,7 @@
 Este documento detalla las tareas de refinamiento para los módulos administrativos y de laboratorio, basadas en la auditoría visual y funcional post-reset.
 
 ## 1. Módulo: Modules Control (Admin)
+
 - [ ] **Mejora Visual**: Rediseñar la vista para que sea más amigable e informativa.
 - [ ] **Contenido Visual**: Agregar elementos gráficos que realmente informen sobre el estado de los módulos.
 
@@ -44,3 +45,18 @@ Este documento detalla las tareas de refinamiento para los módulos administrati
 ## 9. Órdenes (Settings/Admin)
 - [ ] **Reubicación**: Mover el menú de Órdenes a "Configuración Lab" dentro de Settings.
 - [ ] **Validación**: Asegurar que los datos sean reales.
+
+## 10. Evolución Integración Odoo (Fase 2) - COMPLETADA (Lógica)
+
+### Crédito y Finanzas
+- [x] Obtener `property_payment_term_id` de todos los clientes.
+- [x] Definir lógica de bloqueo de despacho: `Cash` (bloqueado hasta pago) vs `Credit` (despacho permitido).
+
+### Sincronización Masiva (Contactos y Productos)
+- [x] Consultar el 100% de los campos disponibles en Odoo para `res.partner` y `product.product`.
+- [x] Implementar middleware de normalización: transformar `false/null` de Odoo en `0` o `""` en DentalFlow.
+- [x] Almacenar el objeto íntegro en la columna `raw_data` (JSONB).
+
+### Control de Visualización Dinámico
+- [ ] Usar `odoo_field_mappings` para gestionar qué campos del `raw_data` se visualizan en la UI.
+- [ ] Permitir al Super Admin marcar cuáles campos se sincronizan con las tablas operativas (`clinics`, `services`) y cuáles son solo informativos.

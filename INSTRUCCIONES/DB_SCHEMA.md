@@ -80,3 +80,15 @@ La "Fábrica" de prótesis y dispositivos.
 
 4.  **Integridad Referencial:**
     *   Borrar una `clinic` debe hacer CASCADE a `staff`, `patients`, `appointments`, etc.
+
+---
+
+## 🌐 Evolución Arquitectura V5 (Capa Public)
+
+Desde febrero 2026, el sistema utiliza el esquema `public` como una "Capa de Presentación":
+
+*   **`public.users`**: Vista unificada de perfiles y roles. Usar esta siempre en lugar de `profiles`.
+*   **`public.orders`**: Tabla principal para el Kanban de laboratorio. 
+    *   *Mapeo Crítico:* `due_date` (antiguamente `delivery_date`), `patient_id` (tipo `TEXT`).
+*   **`public.app_config`**: Almacén de configuraciones globales (ej: Welcome Message "Ocean").
+

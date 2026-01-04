@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Settings, Plus, Trash2, Save } from 'lucide-react'
+import { Save, Plus, Trash2, Printer, Edit, Settings } from 'lucide-react'
 import { getToothSVG } from './tooth-svg'
 import { OrderModal } from './order-modal'
 import { createBudget } from '../actions/budgets'
@@ -140,34 +140,22 @@ interface ToothFinding {
   marginType: 'percent' | 'fixed'
   marginValue: number
   isLabService: boolean
+  orderId?: string
 }
 
 interface OdontogramProps {
   patientId: string
+  patientName?: string
   readonly?: boolean
 }
 
 // Import new service functions
 import { getLabServices, Service } from '../actions/services'
+import { getPatientDentalChart, saveToothCondition } from '../actions/clinical'
 
-export function Odontogram({ patientId, readonly = false }: OdontogramProps) {
+export function Odontogram({ patientId, patientName, readonly = false }: OdontogramProps) {
+  /* 1. State Declarations */
   const [servicesCatalog, setServicesCatalog] = useState<any[]>(SERVICES_CATALOG_MOCK)
-  
-  useEffect(() => {
-     getLabServices().then((result) => {
-         if(result.success && result.data && result.data.length > 0) {
-             const mapped = result.data.map((s: Service) => ({
-                 id: s.id,
-                 name: s.name,
-                 cost: s.cost_price_gtq, // Use GTQ cost
-                 category: s.category || 'clinic',
-                 sla_days: s.turnaround_days || 0
-             }))
-             setServicesCatalog(mapped)
-         }
-     })
-  }, [])
-
   const [isSaving, setIsSaving] = useState(false)
   const [toothType, setToothType] = useState<'adult' | 'child'>('adult')
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
@@ -186,6 +174,84 @@ export function Odontogram({ patientId, readonly = false }: OdontogramProps) {
   const [orderModalOpen, setOrderModalOpen] = useState(false)
   const [itemsToOrder, setItemsToOrder] = useState<any[]>([])
 
+  /* 2. Effects */
+  
+  // Load Services
+  useEffect(() => {
+     getLabServices().then((result) => {
+         if(result.success && result.data && result.data.length > 0) {
+             const mapped = result.data.map((s: Service) => ({
+                 id: s.id,
+                 name: s.name,
+                 cost: s.cost_price_gtq, // Use GTQ cost
+                 // Any service from getLabServices IS a lab service
+                 category: 'lab', 
+                 sla_days: s.turnaround_days || 0
+             }))
+             setServicesCatalog(mapped)
+         }
+     })
+  }, [])
+
+  // Load Patient Dental Chart
+  useEffect(() => {
+     if (!patientId) return
+
+     getPatientDentalChart(patientId).then(result => {
+         if (result.success && result.data) {
+             // Map DB records to local state
+            const newTeethStates = new Map<number, ToothState>()
+            const newFindings: ToothFinding[] = []
+
+            result.data.forEach((record) => {
+                const toothNum = record.tooth_number
+                
+                // Update Teeth State Map
+                const currentState = newTeethStates.get(toothNum) || {
+                    toothNumber: toothNum,
+                    surfaces: {
+                        oclusal: 'healthy',
+                        mesial: 'healthy',
+                        distal: 'healthy',
+                        vestibular: 'healthy',
+                        lingual: 'healthy'
+                    }
+                }
+                // Update specific surface
+                if (record.surface in currentState.surfaces) {
+                     currentState.surfaces[record.surface as keyof typeof currentState.surfaces] = record.condition
+                }
+                newTeethStates.set(toothNum, currentState)
+
+                // Add to Findings List if not healthy
+                if (record.condition !== 'healthy') {
+                    const findingDef = FINDINGS.find(f => f.id === record.condition)
+                    if (findingDef) {
+                        newFindings.push({
+                            id: `db_${toothNum}_${record.surface}`, // Synthetic ID
+                            toothNumber: toothNum,
+                            surface: record.surface,
+                            finding: record.condition,
+                            findingName: findingDef.name,
+                            color: findingDef.color,
+                            treatment: findingDef.treatment,
+                            status: 'pending', // TODO: Store status in DB?
+                            cost: 0, 
+                            price: 0,
+                            marginType: 'percent',
+                            marginValue: 0,
+                            isLabService: false
+                         })
+                    }
+                }
+            })
+            
+            setTeethStates(newTeethStates)
+            setFindings(newFindings)
+         }
+     })
+  }, [patientId])
+
   const handleOrderClick = (finding: ToothFinding) => {
       const catalogService = servicesCatalog.find((s: any) => s.id === finding.serviceId)
       setItemsToOrder([{
@@ -198,33 +264,60 @@ export function Odontogram({ patientId, readonly = false }: OdontogramProps) {
   }
 
   const handleConfirmOrder = async (orderData: any) => {
-      // Create Lab Order via API
-      const result = await createLabOrder({
-          patient_id: patientId,
-          patient_name: 'Paciente ' + patientId, // Should fetch real name or pass as prop
-          items: orderData.items, // IDs
-          is_digital: orderData.is_digital,
-          delivery_info: orderData.delivery_info,
-          notes: orderData.notes,
-          estimated_delivery: orderData.estimated_delivery
-      })
+      console.log('🔵 handleConfirmOrder called with:', orderData)
+      
+      // We need to map finding IDs back to service IDs if createLabOrder expects service IDs
+      // Current odontogram logic: orderData.items contains finding.id (synthetic)
+      // We should extract the actual serviceIds from findings
+      const serviceIds = findings
+        .filter(f => orderData.items.includes(f.id))
+        .map(f => f.serviceId)
+        .filter(Boolean) as string[]
 
-      if (result.success) {
-          // Update status of items locally based on order creation
-          const newFindings = findings.map(f => {
-              if (orderData.items.includes(f.id)) {
-                  // Mark finding as ordered (visual cue)
-                  return { ...f, status: 'in_progress' as const, orderId: result.data.id } 
-              }
-              return f
+      console.log('🔵 Extracted serviceIds:', serviceIds)
+      console.log('🔵 Patient ID:', patientId)
+      console.log('🔵 Patient Name:', patientName)
+
+      if (serviceIds.length === 0) {
+          toast.error('No se encontraron servicios válidos para la orden')
+          return
+      }
+
+      try {
+          toast.loading('Creando orden de laboratorio...')
+          
+          // Create Lab Order via API
+          // Create Lab Order via API
+          const result = await createLabOrder({
+              patient_id: patientId,
+              patient_name: patientName || `Paciente ${patientId}`, 
+              items: serviceIds, 
+              delivery_type: orderData.delivery_type,
+              digital_files: orderData.digital_files,
+              shipping_info: orderData.shipping_info,
+              notes: orderData.notes,
+              estimated_delivery: orderData.estimated_delivery ? new Date(orderData.estimated_delivery).toISOString() : undefined
           })
-          setFindings(newFindings)
-          setOrderModalOpen(false)
-          // toast.success('Orden de laboratorio creada')
-          alert('Orden creada con éxito')
-      } else {
-          // toast.error('Error al crear orden')
-          alert('Error al crear orden: ' + result.message)
+
+          console.log('🔵 createLabOrder result:', result)
+
+          if (result.success && result.data) {
+              // Update status of items locally based on order creation
+              const newFindings = findings.map(f => {
+                  if (serviceIds.includes(f.serviceId || '')) { 
+                      return { ...f, status: 'in_progress' as const, orderId: result.data.id } 
+                  }
+                  return f
+              })
+              setFindings(newFindings)
+              setOrderModalOpen(false)
+              toast.success(`✅ Orden creada exitosamente (ID: ${result.data.id})`)
+          } else {
+              toast.error(`❌ Error al crear orden: ${result.message || 'Error desconocido'}`)
+          }
+      } catch (error: any) {
+          console.error('🔴 Error in handleConfirmOrder:', error)
+          toast.error(`❌ Error inesperado: ${error.message}`)
       }
   }
 
@@ -270,7 +363,7 @@ export function Odontogram({ patientId, readonly = false }: OdontogramProps) {
 
   const updatePrice = (field: 'price' | 'margin' | 'cost', value: number) => {
       setPriceConfig(prev => {
-          let newConfig = { ...prev }
+          const newConfig = { ...prev }
           
           if (field === 'price') {
               newConfig.price = value
@@ -330,11 +423,25 @@ export function Odontogram({ patientId, readonly = false }: OdontogramProps) {
     openDialog(toothNumber, surfaceId)
   }
 
-  const handleAddFinding = () => {
+  const handleAddFinding = async () => {
     if (!selectedTooth || !selectedSurface || !selectedFinding) return
 
     const finding = FINDINGS.find((f) => f.id === selectedFinding)
     if (!finding) return
+
+    // Save to DB
+    const result = await saveToothCondition({
+        patient_id: patientId,
+        tooth_number: selectedTooth,
+        surface: selectedSurface,
+        condition: selectedFinding,
+        notes: '' // TODO: Add notes field in dialog
+    })
+
+    if (!result.success) {
+        alert('Error al guardar: ' + result.message)
+        return
+    }
 
     const currentState = teethStates.get(selectedTooth) || {
       toothNumber: selectedTooth,
@@ -358,7 +465,7 @@ export function Odontogram({ patientId, readonly = false }: OdontogramProps) {
     setTeethStates(new Map(teethStates.set(selectedTooth, newState)))
 
     const newFinding: ToothFinding = {
-      id: `${Date.now()}`,
+      id: result.id || `${Date.now()}`,
       toothNumber: selectedTooth,
       surface: selectedSurface,
       finding: selectedFinding,
@@ -630,8 +737,13 @@ export function Odontogram({ patientId, readonly = false }: OdontogramProps) {
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                          {finding.isLabService && (
-                             <Button size="sm" className="h-7 text-xs bg-cyan-600 hover:bg-cyan-700" onClick={() => handleOrderClick(finding)}>
-                                Pedir
+                             <Button 
+                                size="sm" 
+                                variant={finding.orderId ? "outline" : "default"}
+                                className={`h-7 text-xs ${finding.orderId ? 'border-amber-500 text-amber-600 hover:bg-amber-50' : 'bg-cyan-600 hover:bg-cyan-700'}`} 
+                                onClick={() => handleOrderClick(finding)}
+                             >
+                                {finding.orderId ? <><Edit className="w-3 h-3 mr-1"/>Editar</> : 'Pedir'}
                              </Button>
                          )}
                         <Button variant="ghost" size="icon" onClick={() => handleDeleteFinding(finding.id)}>

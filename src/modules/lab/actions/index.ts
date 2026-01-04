@@ -6,17 +6,19 @@ import { revalidatePath } from 'next/cache'
 
 export interface KanbanCard {
   id: string
+  order_number: string
+  patient_name: string
+  doctor_name: string
   clinic_name: string
-  product_name: string
-  patient_summary: string
   status: string
-  priority: 'normal' | 'high' | 'urgent'
+  service_name: string
   due_date: string
+  priority: 'urgent' | 'high' | 'normal' | 'low'
+  delivery_type: 'digital' | 'pickup' | 'shipping'
+  created_at: string
   total_price: number
   currency: string
   odoo_status: 'pending' | 'synced' | 'error'
-  doctor_name?: string
-  order_number?: string
   patient_id?: string
   is_digital?: boolean
   courier_name?: string
@@ -33,12 +35,16 @@ export interface KanbanCard {
 }
 
 export interface LabDashboardStats {
-  new: number
-  in_process: number
-  pending: number
-  on_hold: number
-  rejected: number
-  delivered: number
+  clinic_pending: number
+  income_validation: number
+  gypsum: number
+  design: number
+  client_approval: number
+  nesting: number
+  production_man: number
+  qa: number
+  billing: number
+  delivery: number
   avg_sla_pct: number
 }
 
@@ -55,6 +61,7 @@ export async function getKanbanCards(): Promise<KanbanCard[]> {
 
   if (error) {
     console.error('Error fetching kanban:', error)
+    console.error('Kanban error details:', JSON.stringify(error, null, 2))
     return []
   }
 
@@ -62,20 +69,30 @@ export async function getKanbanCards(): Promise<KanbanCard[]> {
 }
 
 export async function updateCardStatus(orderId: string, newStatus: string, justification?: string) {
-  const supabase = await createClient()
+  try {
+    console.log('🔵 updateCardStatus called:', { orderId, newStatus, justification })
+    
+    const supabase = await createClient()
 
-  // Use RPC to bypass schema visibility issues
-  const { error } = await supabase.rpc('update_lab_order_status', {
-    p_order_id: orderId,
-    p_status: newStatus,
-    p_justification: justification
-  })
+    // Use RPC to bypass schema visibility issues
+    const { error } = await supabase.rpc('update_lab_order_status', {
+      p_order_id: orderId,
+      p_status: newStatus,
+      p_justification: justification || null
+    })
 
-  if (error) {
-    throw new Error(error.message)
+    if (error) {
+      console.error('🔴 RPC error:', error)
+      throw new Error(error.message)
+    }
+
+    console.log('✅ Order status updated successfully')
+    revalidatePath('/dashboard/lab')
+    revalidatePath('/dashboard/lab/kamba')
+  } catch (error: any) {
+    console.error('🔴 updateCardStatus error:', error)
+    throw error
   }
-
-  revalidatePath('/dashboard/lab')
 }
 
 export async function toggleTimerAction(cardId: string) {
@@ -94,15 +111,70 @@ export async function toggleTimerAction(cardId: string) {
 }
 
 export async function getLabDashboardStats(): Promise<LabDashboardStats> {
-  const supabase = await createClient()
-  const { data, error } = await supabase.rpc('get_lab_dashboard_stats')
-  
-  if (error) {
-    console.error('Error fetching dashboard stats:', error)
-    return { new: 0, in_process: 0, pending: 0, on_hold: 0, rejected: 0, delivered: 0, avg_sla_pct: 0 }
+  try {
+    const supabase = await createClient()
+    
+    // Check if user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      console.error('Auth error in getLabDashboardStats:', authError)
+      return { 
+        clinic_pending: 0, 
+        income_validation: 0, 
+        gypsum: 0, 
+        design: 0, 
+        client_approval: 0, 
+        nesting: 0, 
+        production_man: 0, 
+        qa: 0, 
+        billing: 0, 
+        delivery: 0, 
+        avg_sla_pct: 0 
+      }
+    }
+    
+    console.log('🔵 Calling get_lab_dashboard_stats for user:', user.id)
+    
+    const { data, error } = await supabase.rpc('get_lab_dashboard_stats')
+    
+    if (error) {
+      console.error('Error fetching dashboard stats:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
+      return { 
+        clinic_pending: 0, 
+        digital_picking: 0, 
+        income_validation: 0, 
+        gypsum: 0, 
+        design: 0, 
+        client_approval: 0, 
+        nesting: 0, 
+        production_man: 0, 
+        qa: 0, 
+        billing: 0, 
+        delivery: 0, 
+        avg_sla_pct: 0 
+      }
+    }
+    
+    console.log('✅ Dashboard stats received:', data)
+    return data as LabDashboardStats
+  } catch (err) {
+    console.error('Exception in getLabDashboardStats:', err)
+    return { 
+      clinic_pending: 0, 
+      income_validation: 0, 
+      gypsum: 0, 
+      design: 0, 
+      client_approval: 0, 
+      nesting: 0, 
+      production_man: 0, 
+      qa: 0, 
+      billing: 0, 
+      delivery: 0, 
+      avg_sla_pct: 0 
+    }
   }
-  
-  return data as LabDashboardStats
 }
 
 export async function getLabProductionChart(): Promise<ProductionChartData[]> {

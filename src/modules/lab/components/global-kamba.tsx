@@ -46,17 +46,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
 const KAMBA_COLUMNS = [
-  { id: 'clinic_pending', label: '1. Clínica', icon: Truck, color: 'bg-gray-50' },
-  { id: 'digital_picking', label: '2. Digital', icon: Monitor, color: 'bg-blue-50' },
-  { id: 'income_validation', label: '3. Ingresos', icon: ClipboardCheck, color: 'bg-emerald-50' },
-  { id: 'gypsum', label: '4. Yesos', icon: Layers, color: 'bg-amber-50' },
-  { id: 'design', label: '5. Diseño', icon: PenTool, color: 'bg-indigo-50' },
-  { id: 'client_approval', label: '6. Aprobación', icon: UserCheck, color: 'bg-purple-50' },
-  { id: 'nesting', label: '7. Nesting', icon: Cpu, color: 'bg-orange-50' },
-  { id: 'production_man', label: '8. MAN', icon: Hammer, color: 'bg-pink-50' },
-  { id: 'qa', label: '9. QA', icon: Search, color: 'bg-cyan-50' },
-  { id: 'billing', label: '10. Facturar', icon: Receipt, color: 'bg-green-50' },
-  { id: 'delivery', label: '11. Delivery', icon: Send, color: 'bg-slate-50' },
+  { id: 'clinic_pending', label: '1. CLÍNICA', icon: Truck, color: 'bg-gray-50' },
+  { id: 'income_validation', label: '2. INGRESOS', icon: ClipboardCheck, color: 'bg-emerald-50' },
+  { id: 'gypsum', label: '3. YESOS', icon: Layers, color: 'bg-amber-50' },
+  { id: 'design', label: '4. DISEÑO', icon: PenTool, color: 'bg-indigo-50' },
+  { id: 'client_approval', label: '5. APRO CLIENTE', icon: UserCheck, color: 'bg-purple-50' },
+  { id: 'nesting', label: '6. NESTING', icon: Cpu, color: 'bg-orange-50' },
+  { id: 'production_man', label: '7. MAN', icon: Hammer, color: 'bg-pink-50' },
+  { id: 'qa', label: '8. QA', icon: Search, color: 'bg-cyan-50' },
+  { id: 'billing', label: '9. BILLING', icon: Receipt, color: 'bg-green-50' },
+  { id: 'delivery', label: '10. DELIVERY', icon: Send, color: 'bg-slate-50' },
 ]
 
 export function GlobalKamba({ initialOrders, userRole }: { initialOrders: KanbanCard[], userRole: string }) {
@@ -177,11 +176,11 @@ export function GlobalKamba({ initialOrders, userRole }: { initialOrders: Kanban
       </div>
 
       {viewMode === 'kanban' ? (
-        <div className="flex flex-row w-full h-[750px] gap-2 select-none overflow-x-auto pb-4 custom-scrollbar">
+        <div className="flex flex-row flex-wrap w-full min-h-[750px] gap-3 select-none overflow-x-hidden pb-4">
           {KAMBA_COLUMNS.map((col) => (
             <div 
               key={col.id} 
-              className={`flex-1 min-w-[200px] max-w-[280px] flex flex-col rounded-lg border border-gray-100 ${col.color} transition-all duration-300 shadow-sm`}
+              className={`flex-1 min-w-[280px] max-w-[320px] flex flex-col rounded-lg border border-gray-100 ${col.color} transition-all duration-300 shadow-sm hover:shadow-md`}
             >
               {/* Column Header */}
               <div className="p-3 border-b border-gray-200/50 flex flex-col items-center text-center gap-1">
@@ -377,74 +376,103 @@ function KambaCard({
   onPause: () => void,
   onDetails: () => void
 }) {
+  const [now, setNow] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const getSLARemaining = () => {
+    if (!order.due_date) return { text: 'Sin fecha', color: 'text-gray-400' }
+    
+    const due = new Date(order.due_date)
+    const diff = due.getTime() - now.getTime()
+    
+    if (diff < 0) return { text: 'ATRASADO', color: 'text-red-600 font-bold' }
+    
+    const totalSeconds = Math.floor(diff / 1000)
+    const days = Math.floor(totalSeconds / (24 * 60 * 60))
+    const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60))
+    const minutes = Math.floor((totalSeconds % (60 * 60)) / 60)
+    const seconds = totalSeconds % 60
+    
+    if (days > 0) {
+      return { 
+        text: `${days}d ${hours}h ${minutes}m ${seconds}s`, 
+        color: 'text-green-600' 
+      }
+    }
+    if (hours > 0) {
+      return { 
+        text: `${hours}h ${minutes}m ${seconds}s`, 
+        color: 'text-orange-600' 
+      }
+    }
+    return { 
+      text: `${minutes}m ${seconds}s`, 
+      color: 'text-red-500 font-bold' 
+    }
+  }
+
+  const sla = getSLARemaining()
+
   return (
     <Card className={`group relative border-none shadow-sm cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all ${
        order.is_paused ? 'bg-amber-50 opacity-80' : 
        order.priority === 'urgent' ? 'bg-red-50' : 'bg-white'
     }`}>
-      <CardContent className="p-2 flex flex-col gap-1.5" onClick={onDetails}>
+      <CardContent className="p-3 flex flex-col gap-2" onClick={onDetails}>
         {/* Header: No. Orden & Pause State */}
         <div className="flex justify-between items-start">
            <Badge variant="secondary" className="text-[9px] font-mono px-1 h-4 bg-gray-100 text-gray-600">
-              {order.order_number || '#'+order.id.slice(0,4).toUpperCase()}
+              {order.order_number}
            </Badge>
            {order.is_paused && <Pause className="h-2.5 w-2.5 text-amber-500 animate-pulse" />}
         </div>
 
         {/* Info Body */}
         <div className="flex flex-col gap-0.5 leading-tight">
-           <span className="text-[10px] font-extrabold text-gray-900 line-clamp-1">{order.product_name}</span>
-           <span className="text-[8px] text-blue-600 font-bold truncate tracking-tight">{order.clinic_name}</span>
-           <span className="text-[8px] text-gray-500 truncate italic">Dr. {order.doctor_name || '---'}</span>
+           <span className="text-[10px] font-extrabold text-gray-900 line-clamp-2">{order.service_name || 'Servicio General'}</span>
+           <span className="text-[9px] text-blue-600 font-bold truncate tracking-tight">{order.patient_name}</span>
+           <span className="text-[8px] text-gray-500 truncate italic">Dr. {order.doctor_name}</span>
+           <span className="text-[8px] text-teal-600 font-medium truncate">{order.clinic_name}</span>
         </div>
 
-        {/* SLA / Timer Mock */}
-        <div className="flex items-center gap-1 mt-1 text-[8px] text-gray-400 font-mono">
-           <Clock className="h-2.5 w-2.5" />
-           <span>SLA: {order.sla_hours || '48'}h / </span>
-           <span className={order.priority === 'urgent' ? 'text-red-500 font-bold' : 'text-green-600'}>32h rem</span>
-        </div>
-
-        {/* Patient ID Link */}
-        <div className="flex items-center gap-1 mt-1">
-           <span className="text-[7px] font-bold text-gray-400 uppercase tracking-tighter">Patient ID:</span>
-           <span className="text-[7px] font-mono text-gray-600">{order.patient_id?.slice(0,8) || 'PEND-DOC'}</span>
-        </div>
-
-        {/* Action Buttons (Visible on Hover) */}
-        <div className="mt-2 grid grid-cols-2 gap-1" onClick={(e) => e.stopPropagation()}>
-           <Button 
-              variant="outline" 
-              className="h-6 text-[8px] px-1 gap-1 text-red-600 border-red-100 hover:bg-red-50"
-              onClick={onBackward}
-           >
-              <Undo2 className="h-2.5 w-2.5" /> Regresar
-           </Button>
-           <Button 
-              className="h-6 text-[8px] px-1 gap-1 bg-green-600 hover:bg-green-700"
-              onClick={onForward}
-           >
-              Listo <CheckCircle2 className="h-2.5 w-2.5" />
-           </Button>
-           <Button 
-              variant="ghost" 
-              className="col-span-2 h-5 text-[7px] text-amber-600 hover:bg-amber-100"
-              onClick={onPause}
-           >
-              {order.is_paused ? <Play className="h-2 w-2 mr-1"/> : <Pause className="h-2 w-2 mr-1"/>}
-              {order.is_paused ? 'Continuar Proc.' : 'Solicitar Pausa'}
-           </Button>
-        </div>
-
-        {/* Type Icon Overlay */}
-        <div className="absolute top-1 right-1 p-0.5 pointer-events-none">
-           {order.is_digital ? (
-             <Monitor className="h-2.5 w-2.5 text-blue-400" />
-           ) : (
-             <ClipboardCheck className="h-2.5 w-2.5 text-emerald-400" />
-           )}
+        <div className="flex items-center gap-1 mt-1 text-[8px] font-mono">
+           <Clock className={`h-2.5 w-2.5 ${sla.color}`} />
+           <span className={sla.color}>{sla.text}</span>
         </div>
       </CardContent>
+
+      <div className="mt-2 grid grid-cols-2 gap-1 p-2 pt-0" onClick={(e) => e.stopPropagation()}>
+         <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-6 text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+            onClick={onForward}
+         >
+            Avance <Play className="ml-1 h-3 w-3" />
+         </Button>
+         <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-6 text-[10px] bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+            onClick={onPause}
+         >
+            {order.is_paused ? <Play className="mr-1 h-3 w-3" /> : <Pause className="mr-1 h-3 w-3" />}
+            {order.is_paused ? 'Reanudar' : 'Pausar'}
+         </Button>
+      </div>
+
+      {/* Type Icon Overlay */}
+      <div className="absolute top-1 right-1 p-0.5 pointer-events-none">
+         {order.delivery_type === 'digital' ? (
+           <Monitor className="h-2.5 w-2.5 text-blue-400" />
+         ) : (
+           <ClipboardCheck className="h-2.5 w-2.5 text-emerald-400" />
+         )}
+      </div>
     </Card>
   )
 }

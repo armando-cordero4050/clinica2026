@@ -25,15 +25,15 @@ export default async function DashboardPage() {
     // Fetch system statistics
     const { data: users } = await supabase.rpc('get_all_users_with_sessions')
     const { data: clinics } = await supabase.from('clinics').select('id, name, is_active')
-    const { data: labOrders } = await supabase.from('lab_orders').select('id, status').limit(1000)
-    const { data: services } = await supabase.from('lab_services').select('id, name, is_active')
+    const { data: orders } = await supabase.from('orders').select('id, status').limit(1000)
+    const { data: services } = await supabase.from('services').select('id, name, is_active')
 
     const totalUsers = users?.length || 0
     const activeUsers = users?.filter((u: any) => u.has_active_session).length || 0
     const totalClinics = clinics?.length || 0
     const activeClinics = clinics?.filter((c: any) => c.is_active).length || 0
-    const totalOrders = labOrders?.length || 0
-    const pendingOrders = labOrders?.filter((o: any) => o.status === 'pending').length || 0
+    const totalOrders = orders?.length || 0
+    const pendingOrders = orders?.filter((o: any) => o.status === 'clinic_pending' || o.status === 'digital_picking').length || 0
     const totalServices = services?.length || 0
     const activeServices = services?.filter((s: any) => s.is_active).length || 0
 

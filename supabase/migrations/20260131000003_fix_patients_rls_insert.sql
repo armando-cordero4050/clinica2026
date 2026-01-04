@@ -7,6 +7,10 @@ ALTER TABLE schema_medical.patients ENABLE ROW LEVEL SECURITY;
 -- 2. Drop existing restrictive policies if any
 DROP POLICY IF EXISTS "Clinic Internal Access" ON schema_medical.patients;
 DROP POLICY IF EXISTS "Authenticated users can manage patients" ON schema_medical.patients;
+DROP POLICY IF EXISTS "Staff can view clinic patients" ON schema_medical.patients;
+DROP POLICY IF EXISTS "Staff can create clinic patients" ON schema_medical.patients;
+DROP POLICY IF EXISTS "Staff can update clinic patients" ON schema_medical.patients;
+DROP POLICY IF EXISTS "Staff can delete clinic patients" ON schema_medical.patients;
 
 -- 3. Create comprehensive policies for Patients based on Clinic Staff membership
 -- POLICY: SELECT (Read)

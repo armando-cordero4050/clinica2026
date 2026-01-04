@@ -34,6 +34,7 @@ export default async function ClinicDetailPage({ params }: PageProps) {
 
   const clinic = clinicData.clinic
   const staff = clinicData.staff || []
+  const stats = clinicData.stats || { ordersCount: 0, patientsCount: 0, totalPayments: 0 }
 
   return (
     <div className="space-y-6 container max-w-7xl py-6">
@@ -72,12 +73,24 @@ export default async function ClinicDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
+        <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-cyan-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-bold uppercase">Pacientes</p>
+                <p className="text-2xl font-bold text-cyan-600">{stats.patientsCount}</p>
+              </div>
+              <Users className="h-6 w-6 text-cyan-400" />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="border-none shadow-md bg-gradient-to-br from-green-50 to-emerald-50">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-bold uppercase">Órdenes</p>
-                <p className="text-2xl font-bold text-green-600">0</p>
+                <p className="text-2xl font-bold text-green-600">{stats.ordersCount}</p>
               </div>
               <Package className="h-6 w-6 text-green-400" />
             </div>
@@ -88,22 +101,10 @@ export default async function ClinicDetailPage({ params }: PageProps) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500 font-bold uppercase">Pagos</p>
-                <p className="text-2xl font-bold text-purple-600">$0.00</p>
+                <p className="text-xs text-gray-500 font-bold uppercase">Pagos Totales</p>
+                <p className="text-2xl font-bold text-purple-600">${stats.totalPayments.toFixed(2)}</p>
               </div>
               <DollarSign className="h-6 w-6 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-md bg-gradient-to-br from-amber-50 to-orange-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 font-bold uppercase">Odoo ID</p>
-                <p className="text-xl font-bold text-amber-600">{clinic.odoo_partner_id}</p>
-              </div>
-              <Info className="h-6 w-6 text-amber-400" />
             </div>
           </CardContent>
         </Card>
@@ -135,15 +136,15 @@ export default async function ClinicDetailPage({ params }: PageProps) {
         </TabsContent>
 
         <TabsContent value="staff">
-          <ClinicStaffTab staff={staff} clinicId={params.id} />
+          <ClinicStaffTab staff={staff} clinicId={id} />
         </TabsContent>
 
         <TabsContent value="orders">
-          <ClinicOrdersTab clinicId={params.id} />
+          <ClinicOrdersTab clinicId={id} />
         </TabsContent>
 
         <TabsContent value="payments">
-          <ClinicPaymentsTab clinicId={params.id} />
+          <ClinicPaymentsTab clinicId={id} />
         </TabsContent>
       </Tabs>
     </div>

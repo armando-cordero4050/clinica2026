@@ -1,4 +1,4 @@
-import { getAppointments } from './actions'
+import { getAppointments } from '@/modules/medical/actions/appointments'
 import CalendarView from './calendar-view'
 import { startOfWeek, endOfWeek, addDays } from 'date-fns'
 
@@ -9,7 +9,8 @@ export default async function AppointmentsPage() {
   const start = startOfWeek(addDays(today, -7)) // Include last week
   const end = endOfWeek(addDays(today, 14)) // Include next 2 weeks
   
-  const appointments = await getAppointments(start, end)
+  const result = await getAppointments(start, end)
+  const appointments = result.success ? result.data : []
 
   return (
     <div className="container mx-auto py-6 h-full flex flex-col">
@@ -21,7 +22,7 @@ export default async function AppointmentsPage() {
       </div>
       
       <div className="flex-1">
-        <CalendarView appointments={appointments} />
+        <CalendarView appointments={appointments || []} />
       </div>
     </div>
   )

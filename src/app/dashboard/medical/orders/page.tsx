@@ -72,13 +72,34 @@ export default function OrdersPage() {
   }
 
   const statusColors: Record<string, string> = {
-    new: 'bg-blue-600',
-    design: 'bg-yellow-600',
-    milling: 'bg-orange-600',
-    ceramic: 'bg-purple-600',
-    qc: 'bg-pink-600',
-    ready: 'bg-green-600',
-    delivered: 'bg-gray-600'
+    clinic_pending: 'bg-gray-500',
+    digital_picking: 'bg-blue-500',
+    income_validation: 'bg-emerald-500',
+    gypsum: 'bg-amber-600',
+    design: 'bg-indigo-500',
+    client_approval: 'bg-purple-500',
+    nesting: 'bg-orange-500',
+    production_man: 'bg-pink-500',
+    qa: 'bg-cyan-500',
+    billing: 'bg-green-600',
+    delivery: 'bg-slate-700'
+  }
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      clinic_pending: 'Pendiente Recolección',
+      digital_picking: 'Digital Picking',
+      income_validation: 'Validación Ingreso',
+      gypsum: 'Yesos / Modelos',
+      design: 'Diseño',
+      client_approval: 'Aprobación Cliente',
+      nesting: 'Nesting',
+      production_man: 'Producción',
+      qa: 'QA / Calidad',
+      billing: 'Facturación',
+      delivery: 'Entregado'
+    }
+    return labels[status] || status.toUpperCase()
   }
 
   return (
@@ -123,7 +144,7 @@ export default function OrdersPage() {
               <div>
                 <p className="text-xs text-gray-500 font-bold uppercase">En Proceso</p>
                 <p className="text-3xl font-bold text-orange-600">
-                  {orders.filter(o => !['delivered', 'ready'].includes(o.status)).length}
+                  {orders.filter(o => !['delivery', 'billing'].includes(o.status)).length}
                 </p>
               </div>
               <Loader2 className="h-8 w-8 text-orange-400" />
@@ -137,7 +158,7 @@ export default function OrdersPage() {
               <div>
                 <p className="text-xs text-gray-500 font-bold uppercase">Completadas</p>
                 <p className="text-3xl font-bold text-green-600">
-                  {orders.filter(o => o.status === 'delivered').length}
+                  {orders.filter(o => o.status === 'delivery').length}
                 </p>
               </div>
               <Package className="h-8 w-8 text-green-400" />
@@ -191,7 +212,7 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <Badge className={statusColors[order.status] || 'bg-gray-600'}>
-                    {order.status.toUpperCase()}
+                    {getStatusLabel(order.status)}
                   </Badge>
                 </div>
               </CardHeader>

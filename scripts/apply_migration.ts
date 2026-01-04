@@ -1,59 +1,69 @@
-import fs from 'fs';
-import path from 'path';
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+import * as dotenv from 'dotenv'
 
-// Fix for __dirname in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Load environment variables
+dotenv.config({ path: '.env.local' })
 
-// Load .env from root
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-async function run() {
-  const filePath = process.argv[2];
-  if (!filePath) {
-    console.error('Please provide a file path');
-    process.exit(1);
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Missing Supabase credentials in .env.local')
+  process.exit(1)
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
   }
+})
 
-  const fullPath = path.resolve(process.cwd(), filePath);
-  if (!fs.existsSync(fullPath)) {
-    console.error(`File not found: ${fullPath}`);
-    process.exit(1);
-  }
-
-  const sql = fs.readFileSync(fullPath, 'utf8');
-  
-  let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-  if (!connectionString) {
-     console.error('No DATABASE_URL or POSTGRES_URL found in .env');
-     process.exit(1);
-  }
-
-  // Strip single or double quotes if present
-  connectionString = connectionString.replace(/^['"]|['"]$/g, '');
-
-  console.log('Connecting to database...');
-  const pool = new Pool({
-    connectionString,
-    ssl: { rejectUnauthorized: false } 
-  });
-
+async function applyMigration() {
   try {
-    const client = await pool.connect();
-    console.log(`Executing ${path.basename(filePath)}...`);
-    await client.query(sql);
-    console.log('Migration applied successfully!');
-    client.release();
-  } catch (err) {
-    console.error('Error executing SQL:', err);
-    process.exit(1);
-  } finally {
-    await pool.end();
+    // Read migration file
+    const migrationPath = join(process.cwd(), 'supabase', 'migrations', '20260205000016_fix_odoo_customer_column_name.sql')
+    const migrationSQL = readFileSync(migrationPath, 'utf-8')
+    
+    console.log('📄 Migration SQL:')
+    console.log(migrationSQL)
+    console.log('\n🔄 Applying migration...\n')
+    
+    // Execute each statement separately
+    const statements = migrationSQL
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s && !s.startsWith('--'))
+    
+    for (const statement of statements) {
+      if (!statement) continue
+      
+      console.log(`Executing: ${statement.substring(0, 80)}...`)
+      const { data, error } = await supabase.rpc('exec_sql', { 
+        sql: statement + ';' 
+      }).single()
+      
+      if (error) {
+        console.error('❌ Error:', error)
+        throw error
+      }
+      
+      console.log('✅ Success')
+    }
+    
+    console.log('\n✅ Migration applied successfully!')
+    return true
+  } catch (error) {
+    console.error('\n❌ Migration failed:', error)
+    return false
   }
 }
 
-run();
+applyMigration()
+  .then(success => process.exit(success ? 0 : 1))
+  .catch(err => {
+    console.error('Fatal error:', err)
+    process.exit(1)
+  })

@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { Users, Mail, Key, Shield, CheckCircle2, Briefcase, Loader2 } from 'lucide-react'
 import { updateStaffRole, resetStaffPassword } from '@/modules/medical/actions/clinics'
 import { toast } from 'sonner'
+import { AddStaffDialog } from './add-staff-dialog'
 
 interface StaffMember {
   id: string
@@ -105,9 +106,12 @@ export function ClinicStaffTab({ staff, clinicId }: ClinicStaffTabProps) {
                 Sincronizado desde los contactos de Odoo vinculados a esta clínica.
               </p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-indigo-100 flex items-center gap-2">
-               <Shield className="h-4 w-4 text-indigo-500" />
-               <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Control de Acceso</span>
+            <div className="flex items-center gap-3">
+               <AddStaffDialog clinicId={clinicId} />
+               <div className="bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-indigo-100 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-indigo-500" />
+                  <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Control de Acceso</span>
+               </div>
             </div>
           </div>
         </CardHeader>

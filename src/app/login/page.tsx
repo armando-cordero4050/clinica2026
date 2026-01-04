@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Stethoscope, Microscope, Loader2 } from 'lucide-react'
@@ -39,8 +38,26 @@ export default function LoginPage() {
       setError(authError.message)
       setLoading(false)
     } else {
+      console.log('Login successful. Validating role...')
+      setMessage('Verified. Redirecting...')
+
+      // Explicit Role Check for Redirect
+      const { data: profile } = await supabase.rpc('get_my_profile')
+      const role = profile?.role
+      
       router.refresh()
-      router.push('/dashboard')
+      
+      if (role === 'super_admin') {
+        router.push('/dashboard')
+      } else if (['lab_admin', 'lab_staff'].includes(role || '')) {
+        router.push('/dashboard/lab')
+      } else if (['clinic_admin', 'doctor', 'receptionist', 'clinic_staff'].includes(role || '')) {
+        router.push('/dashboard/medical')
+      } else if (role === 'courier') {
+        router.push('/dashboard/logistics')
+      } else {
+        router.push('/dashboard')
+      }
     }
   }
 
@@ -178,6 +195,43 @@ export default function LoginPage() {
                 >
                     {loading ? <Loader2 className="animate-spin" /> : (isRegistering ? 'Create Account' : 'Log In')}
                 </Button>
+
+                {/* DEV: QUICK LOGIN BUTTONS */}
+                <div className="pt-2 border-t border-gray-100 mt-4">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 text-center">Dev Quick Login ({loginType})</p>
+                    <div className="grid grid-cols-2 gap-2">
+                        {(loginType === 'clinic' ? [
+                            { label: 'Super Admin', email: 'admin@dentalflow.com', pass: 'Admin123!' },
+                            { label: 'Dr. Pedro', email: 'drpedro@clinica.com', pass: 'Clinica9090!' },
+                            { label: 'Clinica Sonrisas', email: 'info@clinicasonrisas.com', pass: 'Dental123!' }, // Temp pass
+                            { label: 'Azure Interior', email: 'azure.Interior24@example.com', pass: 'Clinica5050!' },
+                        ] : [
+                            { label: 'Lab Admin', email: 'admin.lab@a.com', pass: 'Admin123!' },
+                            { label: 'Ingresos (Courier)', email: 'ingresos1@a.com', pass: '909080807070' },
+                        ]).map((u) => (
+                            <button
+                                key={u.email}
+                                type="button"
+                                onClick={() => {
+                                    const emailEl = document.getElementById('email') as HTMLInputElement;
+                                    const passEl = document.getElementById('password') as HTMLInputElement;
+                                    if (emailEl && passEl) {
+                                        emailEl.value = u.email;
+                                        passEl.value = u.pass;
+                                        // Small delay to ensure value allows button state update if strictly controlled (it's not here)
+                                        // Native form submit
+                                        const form = emailEl.closest('form');
+                                        if (form) form.requestSubmit(); 
+                                    }
+                                }}
+                                className="text-xs py-2 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded text-slate-600 transition-colors truncate"
+                                title={`${u.email} (${u.pass})`}
+                            >
+                                {u.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </form>
         </div>
 

@@ -177,7 +177,7 @@ export default function OdooConfigPage() {
         syncStaffFromOdoo, 
         syncProductsFromOdoo, 
         syncInvoicesFromOdoo 
-      } = await import('@/modules/odoo/actions/sync')
+      } = await import('@/modules/odoo/actions')
       
       const intervalSales = simulateProgress('sales')
       toast.loading('Sincronizando órdenes de venta...', { id: 'sync-all' })
@@ -238,7 +238,7 @@ export default function OdooConfigPage() {
         const { syncCustomersFromOdoo } = await import('@/modules/odoo/actions/sync')
         result = await syncCustomersFromOdoo()
       } else if (module === 'products') {
-        const { syncProductsFromOdoo } = await import('@/modules/odoo/actions/sync')
+        const { syncProductsFromOdoo } = await import('@/modules/odoo/actions')
         result = await syncProductsFromOdoo()
       } else if (module === 'invoices') {
         const { syncInvoicesFromOdoo } = await import('@/modules/odoo/actions/sync')

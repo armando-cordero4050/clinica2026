@@ -104,7 +104,7 @@ export async function getPatients(clinicId: string) {
         .order('created_at', { ascending: false })
 
     if (error) {
-        console.error("Error fetching patients:", error)
+        console.error("Error fetching patients:", JSON.stringify(error, null, 2))
         return { success: false, message: error.message }
     }
 
