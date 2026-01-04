@@ -146,3 +146,21 @@ Regla: si una decisión cambia, se agrega un nuevo ADR que la reemplace, nunca s
 - Los presupuestos dentales tienen estructura variable, versiones y descuentos por línea que cambian mucho (JSONB es más flexible que tabla detalle rígida).
 **Impacto:**
 - Indexación JSONB requerida si se quiere buscar por tratamiento en el futuro.
+
+---
+
+## Decision 13: Mapeo Explícito de Roles Odoo/UI vs DB
+**Fecha:** 2026-02-05
+**Contexto:** La interfaz UI y Odoo usan descripciones de puesto en lenguaje natural ("Administrador de Clínica", "Odontólogo"), pero la DB requiere roles técnicos ENUM (`clinic_admin`, `doctor`) para RLS y Auth.
+**Decisión:** 
+- Implementar la lógica de traducción (mapping) dentro de las funciones RPC (`sync_staff_member_from_odoo`).
+- No confiar en que el frontend envíe el rol técnico.
+**Mapeo Oficial:**
+- "Administrador de Clínica" / "Gerente" -> `clinic_admin`
+- "Odontólogo" -> `doctor`
+- "Asistente Dental" -> `assistant`
+- "Recepcionista" -> `receptionist`
+- Default -> `clinic_staff`
+**Racional:** Centraliza la lógica de negocio en la DB, haciendo el sistema robusto ante cambios en el frontend o imports masivos desde Odoo.
+**Impacto:**
+- RPC `sync_staff_member_from_odoo` es la fuente de la verdad para asignación de permisos iniciales.

@@ -211,3 +211,19 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 **Riesgos:**
 - El almacenamiento de `raw_data` masivo puede aumentar el tamaño de la base de datos a largo plazo; se recomienda monitorear el crecimiento de tablas JSONB.
 - Se requiere validar la integración con la UI de despacho para aplicar el bloqueo basado en `payment_policy`.
+
+---
+
+## PR #12 — Staff Role Mapping & Sync Repair
+**Fecha:** 2026-02-05
+**Objetivo:** Solucionar bug de creación de staff ("Hang") y falta de sincronización de clínicas.
+**Cambios:**
+- **DB**: Migración `20260205000030_fix_staff_role_mapping.sql`.
+    - Lógica de traducción de "Job Position" (UI) a "System Role" (DB).
+- **Core Action**: `sync-repair.ts` (Server Action) para vincular clínicas huérfanas con Odoo partners.
+- **Admin UI**: Botón "Reparar Vínculos Odoo" en Settings.
+**Verificación:**
+- Test manual de "Reparar Vínculos" exitoso.
+- SQL de mapeo aplicado.
+**Riesgos:**
+- Si se agregan nuevos puestos en el futuro, requieren actualización del SQL Case.

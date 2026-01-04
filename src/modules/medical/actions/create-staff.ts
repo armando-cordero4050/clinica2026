@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { OdooClient } from '@/lib/odoo/client'
 import { getOdooConfig } from '@/modules/odoo/actions'
 import { revalidatePath } from 'next/cache'
@@ -35,13 +36,47 @@ export async function createClinicStaff(params: CreateStaffParams) {
     }
 
     if (!clinic.odoo_partner_id) {
-        logger.error('Clinic has no Odoo ID', clinic)
+      logger.error('Clinic has no Odoo ID', clinic)
       return { success: false, message: 'Esta clínica no está sincronizada con Odoo. Sincronízala primero.' }
     }
 
-    // 2. Connect to Odoo
+    // 2. Ensure Auth User Exists (Critical for Schema Core FK)
+    const adminClient = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!, 
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    // Check if user exists or create them
+    const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers()
+    const existingUser = users?.find(u => u.email === params.email)
+    
+    if (!existingUser) {
+        logger.debug('User not found in Auth. Creating...', params.email)
+        const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+            email: params.email,
+            password: 'TempPassword123!', // TODO: Better password policy or invite
+            email_confirm: true,
+            user_metadata: { name: params.name }
+        })
+        
+        if (createError) {
+            logger.error('Auth User Creation Failed', createError)
+             // If error is "Email already registered", we might have missed it in listUsers (pagination), proceed.
+             if (!createError.message.includes('already registered')) {
+                 return { success: false, message: `Error creando usuario Auth: ${createError.message}` }
+             }
+        } else {
+            logger.log('Auth User Created', newUser.user?.id)
+            // Wait a moment for Trigger to fire and populate schema_core.users
+            await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+    } else {
+        logger.debug('Auth User already exists', existingUser.id)
+    }
+
+    // 3. Connect to Odoo
     logger.debug('Connecting to Odoo...')
-    console.log('🔹 [Debug] Conectando a Odoo...')
     const config = await getOdooConfig()
     if (!config) {
         logger.error('No Odoo Config')
@@ -55,9 +90,8 @@ export async function createClinicStaff(params: CreateStaffParams) {
         return { success: false, message: 'Fallo de autenticación con Odoo' }
     }
 
-    // 3. Create Contact in Odoo
+    // 4. Create Contact in Odoo
     logger.debug('Authenticated. Preparing payload...')
-    console.log('🔹 [Debug] Autenticado. Preparando payload...')
     
     const combinedNotes = [
         params.title ? `Título: ${params.title}` : null,
@@ -78,20 +112,17 @@ export async function createClinicStaff(params: CreateStaffParams) {
     }
 
     logger.debug('Sending to Odoo:', contactData)
-    console.log('🔹 [Debug] Enviando a Odoo:', contactData)
 
     const newContactId = await odoo.create('res.partner', contactData)
     
     if (!newContactId) {
         logger.error('Odoo creation failed (no ID returned)')
-        console.error('❌ [Error] Odoo create devolvió:', newContactId)
         return { success: false, message: 'Error al crear contacto en Odoo (No devolvió ID)' }
     }
 
     logger.log(`Created in Odoo ID: ${newContactId}. Syncing RPC...`)
-    console.log(`✅ [Debug] Creado en Odoo ID: ${newContactId}. Iniciando Sync RPC...`)
 
-    // 4. Sync back to DentalFlow
+    // 5. Sync back to DentalFlow
     const rpcParams = {
         p_odoo_contact_id: newContactId,
         p_clinic_odoo_id: clinic.odoo_partner_id,
@@ -104,24 +135,21 @@ export async function createClinicStaff(params: CreateStaffParams) {
     }
 
     logger.debug('Params RPC', rpcParams)
-    console.log('🔹 [Debug] Params RPC:', JSON.stringify(rpcParams, null, 2))
 
     const { data, error: rpcError } = await supabase.rpc('sync_staff_member_from_odoo', rpcParams)
 
     if (rpcError) {
         logger.error('RPC Error', rpcError)
-        console.error('❌ [Error] RPC falló:', rpcError)
         return { success: false, message: `Creado en Odoo (${newContactId}) pero falló sync local: ${rpcError.message}` }
     }
 
     logger.log('Success Staff Created')
-    console.log('✅ [Debug] Staff creado exitosamente en DB Local')
     revalidatePath(`/dashboard/medical/clinics/${params.clinicId}`)
     return { success: true, message: 'Staff creado exitosamente' }
 
   } catch (error: any) {
     logger.error('EXCEPTION in createClinicStaff', error)
-    console.error('❌ Create Staff Error:', error)
     return { success: false, message: error.message || 'Error desconocido' }
   }
 }
+

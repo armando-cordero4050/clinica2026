@@ -1,0 +1,172 @@
+[2026-01-04T04:38:23.497Z] [INFO] [CLIENT] INTENTO DE SUBMIT
+DATA: {
+  "name": "Julio Perez",
+  "email": "dr.julio@clinica1.com",
+  "jobPosition": "Administrador de Clínica",
+  "phone": "1234567890",
+  "mobile": "9898989898",
+  "title": "Dr.",
+  "notes": "notas del contacto"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:23.535Z] [INFO] [CLIENT] LLAMANDO SERVER ACTION createClinicStaff
+DATA: {
+  "clinicId": "f3ce19fa-c51e-448f-949a-48550b77a1f2"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:23.551Z] [INFO] INICIO createClinicStaff
+DATA: {
+  "clinicId": "f3ce19fa-c51e-448f-949a-48550b77a1f2",
+  "name": "Julio Perez",
+  "email": "dr.julio@clinica1.com",
+  "jobPosition": "Administrador de Clínica",
+  "phone": "1234567890",
+  "mobile": "9898989898",
+  "title": "Dr.",
+  "notes": "notas del contacto"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:23.722Z] [DEBUG] Connecting to Odoo...
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:24.371Z] [DEBUG] Authenticated. Preparing payload...
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:24.372Z] [DEBUG] Sending to Odoo:
+DATA: {
+  "name": "Julio Perez",
+  "email": "dr.julio@clinica1.com",
+  "function": "Administrador de Clínica",
+  "phone": "1234567890",
+  "mobile": "9898989898",
+  "comment": "Título: Dr.\nnotas del contacto",
+  "parent_id": 7,
+  "type": "contact",
+  "customer_rank": 0,
+  "supplier_rank": 0
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:24.431Z] [INFO] Created in Odoo ID: 14. Syncing RPC...
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:24.432Z] [DEBUG] Params RPC
+DATA: {
+  "p_odoo_contact_id": 14,
+  "p_clinic_odoo_id": 7,
+  "p_name": "Julio Perez",
+  "p_email": "dr.julio@clinica1.com",
+  "p_job_position": "Administrador de Clínica",
+  "p_phone": "1234567890",
+  "p_mobile": "9898989898",
+  "p_raw_data": {
+    "name": "Julio Perez",
+    "email": "dr.julio@clinica1.com",
+    "function": "Administrador de Clínica",
+    "phone": "1234567890",
+    "mobile": "9898989898",
+    "comment": "Título: Dr.\nnotas del contacto",
+    "parent_id": 7,
+    "type": "contact",
+    "customer_rank": 0,
+    "supplier_rank": 0,
+    "id": 14
+  }
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:24.587Z] [ERROR] RPC Error
+DATA: {
+  "code": "23502",
+  "details": "Failing row contains (null, dr.julio@clinica1.com, clinic_admin, t, 2026-01-04 04:38:23.766206+00, 2026-01-04 04:38:23.766206+00, t, Julio Perez).",
+  "hint": null,
+  "message": "null value in column \"id\" of relation \"users\" violates not-null constraint"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:38:24.608Z] [INFO] [CLIENT] ERROR SERVER ACTION (Return false)
+DATA: {
+  "success": false,
+  "message": "Creado en Odoo (14) pero falló sync local: null value in column \"id\" of relation \"users\" violates not-null constraint"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:10.861Z] [INFO] [CLIENT] INTENTO DE SUBMIT
+DATA: {
+  "name": "Julio Perez",
+  "email": "dr.julio@clinica1.com",
+  "jobPosition": "Administrador de Clínica",
+  "phone": "1234567890",
+  "mobile": "9898989898",
+  "title": "Dr.",
+  "notes": "notas del contacto"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:10.892Z] [INFO] [CLIENT] LLAMANDO SERVER ACTION createClinicStaff
+DATA: {
+  "clinicId": "f3ce19fa-c51e-448f-949a-48550b77a1f2"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:10.907Z] [INFO] INICIO createClinicStaff
+DATA: {
+  "clinicId": "f3ce19fa-c51e-448f-949a-48550b77a1f2",
+  "name": "Julio Perez",
+  "email": "dr.julio@clinica1.com",
+  "jobPosition": "Administrador de Clínica",
+  "phone": "1234567890",
+  "mobile": "9898989898",
+  "title": "Dr.",
+  "notes": "notas del contacto"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:11.349Z] [DEBUG] User not found in Auth. Creating...
+DATA: "dr.julio@clinica1.com"
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:11.754Z] [INFO] Auth User Created
+DATA: "27f173ab-f937-464b-8cea-ceb1abece197"
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:12.758Z] [DEBUG] Connecting to Odoo...
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:13.276Z] [DEBUG] Authenticated. Preparing payload...
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:13.277Z] [DEBUG] Sending to Odoo:
+DATA: {
+  "name": "Julio Perez",
+  "email": "dr.julio@clinica1.com",
+  "function": "Administrador de Clínica",
+  "phone": "1234567890",
+  "mobile": "9898989898",
+  "comment": "Título: Dr.\nnotas del contacto",
+  "parent_id": 7,
+  "type": "contact",
+  "customer_rank": 0,
+  "supplier_rank": 0
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:13.335Z] [INFO] Created in Odoo ID: 15. Syncing RPC...
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:13.336Z] [DEBUG] Params RPC
+DATA: {
+  "p_odoo_contact_id": 15,
+  "p_clinic_odoo_id": 7,
+  "p_name": "Julio Perez",
+  "p_email": "dr.julio@clinica1.com",
+  "p_job_position": "Administrador de Clínica",
+  "p_phone": "1234567890",
+  "p_mobile": "9898989898",
+  "p_raw_data": {
+    "name": "Julio Perez",
+    "email": "dr.julio@clinica1.com",
+    "function": "Administrador de Clínica",
+    "phone": "1234567890",
+    "mobile": "9898989898",
+    "comment": "Título: Dr.\nnotas del contacto",
+    "parent_id": 7,
+    "type": "contact",
+    "customer_rank": 0,
+    "supplier_rank": 0,
+    "id": 15
+  }
+}
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:13.461Z] [INFO] Success Staff Created
+--------------------------------------------------------------------------------
+[2026-01-04T04:41:13.602Z] [INFO] [CLIENT] EXITO SERVER ACTION
+DATA: {
+  "success": true,
+  "message": "Staff creado exitosamente"
+}
+--------------------------------------------------------------------------------
