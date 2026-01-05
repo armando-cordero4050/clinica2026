@@ -282,3 +282,53 @@ Implementar un módulo administrativo completo para gestionar el catálogo de mate
 -  Corrección de selector de color
 -  Validación completa de campos
 
+
+## PR-Fix-Lab-Order-FK (2026-01-05)
+**Type**: Bugfix / Schema Update
+**Description**: Solucionado error de Key Violation al crear ordenes. Se modifico FK para apuntar al catalogo publico.
+**Cambios**: ALTER TABLE schema_lab.lab_order_items.
+
+
+## Reorganización de Migraciones (2026-01-05)
+**Type**: Mantenimiento / Organización
+**Description**: Limpieza y organización de archivos de migración SQL.
+
+### Archivos Movidos
+- **EJECUTAR_AHORA_* (7 archivos)**  rchive/applied_2026_01_05/`n  - Todas las migraciones urgentes verificadas como aplicadas
+  - Renombradas con prefijo APLICADO_
+
+- **temp_* (5 archivos)**  rchive/temp_files/`n  - Archivos temporales de debugging
+
+- **fix_* y otros (20+ archivos)**  rchive/fixes_consolidated/`n  - Fixes de RPC, permisos, datos y diagnóstico
+  - Incluye FIX_LAB_FK_POINTER.sql (crítico)
+
+### Verificación
+- Conexión directa a Supabase para verificar estado de migraciones
+- Scripts de diagnóstico: erify_migrations.ts, check_qnan_fix.ts`n- Todas las migraciones urgentes confirmadas como aplicadas
+
+### Impacto
+-  Directorio de migraciones limpio y organizado
+-  READMEs explicativos en cada carpeta de archivo
+-  Historial preservado para referencia futura
+
+
+
+## Fix Lab Order Wizard - No guardaba órdenes (2026-01-05)
+**Type**: Bugfix Crítico
+**Description**: Corregido bug que impedía guardar órdenes de laboratorio.
+
+### Problema
+- El wizard cerraba inmediatamente sin esperar respuesta de createLabOrder
+- ReviewOrder llamaba correctamente al RPC pero el modal se cerraba antes
+
+### Solución
+- Modificado order-wizard.tsx línea 103
+- onSubmit ahora pasa onClose directamente a ReviewOrder
+- ReviewOrder cierra modal solo después de éxito
+
+### Archivos Modificados
+- src/components/lab/wizard/order-wizard.tsx
+
+### Documentación Creada
+- docs/ARQUITECTURA_COMPLETA_POR_MODULOS.md (Análisis exhaustivo de todos los módulos)
+

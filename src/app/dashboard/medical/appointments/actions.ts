@@ -353,49 +353,77 @@ export async function createService(data: {
   description?: string
   price?: number
 }) {
+  console.log('[createService] EXECUTING with data:', data)
   const supabase = await createClient()
   
-  // Get current user's clinic_id
-  // Get current user's clinic_id
-  const { data: profile } = await supabase
-    .schema('schema_medical')
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    console.error('[createService] No user found')
+    return { success: false, message: 'Usuario no autenticado' }
+  }
+  console.log('[createService] User ID:', user.id)
+
+  const { data: profile, error: profileError } = await supabase
     .from('clinic_staff')
     .select('clinic_id')
-    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+    .eq('user_id', user.id)
     .single()
   
+  if (profileError) {
+     console.error('[createService] Error fetching profile:', profileError)
+  }
+  
+  console.log('[createService] Profile found:', profile)
+
   if (!profile?.clinic_id) {
     return { success: false, message: 'No se pudo identificar la clínica' }
   }
 
-  // Create service in lab_services first
-  const { data: newService, error: serviceError } = await supabase
-    .from('services')
-    .insert({
+  // Create service in global services table
+  console.log('[createService] Inserting into services...')
+  const payload = {
       name: data.name.trim(),
       description: data.description?.trim() || null,
       is_active: true
-    })
+    }
+  
+  const { data: newService, error: serviceError } = await supabase
+    .from('services')
+    .insert(payload)
     .select('id')
     .single()
 
   if (serviceError) {
-    console.error('[createService] Error creating service:', serviceError)
-    return { success: false, message: serviceError.message }
+    console.error('[createService] Error creating service in public.services:', serviceError)
+    // Check for RLS issues or column constraint
+    return { success: false, message: `Error DB (Services): ${serviceError.message}` }
   }
+  
+  console.log('[createService] Service created. ID:', newService.id)
 
   // Create price for this clinic
   if (data.price) {
-    const { error: priceError } = await supabase
-      .from('clinic_service_prices')
-      .insert({
+    console.log('[createService] Inserting price into clinic_service_prices...')
+    const pricePayload = {
         clinic_id: profile.clinic_id,
         service_id: newService.id,
-        price: data.price
-      })
+        sale_price_gtq: data.price,
+        sale_price_usd: 0,
+        cost_price_gtq: 0,
+        cost_price_usd: 0,
+        is_available: true,
+        is_active: true
+      }
+      
+    const { error: priceError } = await supabase
+      .from('clinic_service_prices')
+      .insert(pricePayload)
 
     if (priceError) {
-      console.error('[createService] Error creating price:', priceError)
+      console.error('[createService] Error creating price in clinic_service_prices:', priceError)
+      // We don't block success if price fails, but user needs to know
+      return { success: true, id: newService.id, name: data.name, warning: 'Servicio creado pero falló el precio' }
     }
   }
 

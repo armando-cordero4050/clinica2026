@@ -14,9 +14,9 @@ DECLARE
   v_user_role TEXT;
 BEGIN
   -- Get the user's role
-  SELECT role INTO v_user_role
-  FROM schema_core.users
-  WHERE id = auth.uid();
+  SELECT u.role INTO v_user_role
+  FROM schema_core.users u
+  WHERE u.id = auth.uid();
 
   -- If super_admin, return all doctors from all clinics
   IF v_user_role = 'super_admin' THEN
@@ -58,5 +58,5 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Verify it works
-SELECT * FROM public.get_doctors_rpc();
+-- Verify it works (Commented out to prevent SQL Editor error)
+-- SELECT * FROM public.get_doctors_rpc();

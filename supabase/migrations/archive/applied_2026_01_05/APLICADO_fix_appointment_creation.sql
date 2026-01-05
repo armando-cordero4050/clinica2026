@@ -98,7 +98,7 @@ BEGIN
         v_clinic_id, 
         v_new_id, 
         p_service_id, 
-        price
+        COALESCE(sale_price_gtq, 0)
     FROM schema_medical.clinic_service_prices
     WHERE service_id = p_service_id AND clinic_id = v_clinic_id
     LIMIT 1;

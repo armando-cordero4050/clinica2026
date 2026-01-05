@@ -22,12 +22,13 @@ export async function createAppointment(data: AppointmentInsert) {
     // but we can still resolve clinic here for extra safety or if RPC fails
     const { data: newId, error } = await supabase.rpc('create_appointment_rpc', {
         p_patient_id: data.patient_id,
-        p_doctor_id: data.doctor_id,
+        p_doctor_id: data.doctor_id || null,
         p_title: data.title,
         p_start: data.start_time,
         p_end: data.end_time,
         p_appointment_type: data.type || 'consultation',
-        p_reason: data.details?.reason || null
+        p_reason: data.details?.reason || null,
+        p_clinic_id: data.clinic_id || null // Now linking the optional param
     })
 
     if (error) {

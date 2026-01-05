@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Package, DollarSign } from 'lucide-react'
 import { ServicesTable } from './services-table'
+import { AddServiceModal } from './add-service-modal'
 
 export const metadata = {
   title: 'Servicios | DentalFlow',
@@ -53,14 +54,17 @@ async function ServicesContent() {
 
   return (
     <>
+
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Servicios</h1>
           <p className="text-muted-foreground">
-            Gestiona los precios de venta de servicios de laboratorio
+            Gestiona los precios de venta y catálogo de servicios
           </p>
         </div>
+        <AddServiceModal clinicId={clinic.id} labServices={services || []} />
       </div>
 
       {/* Stats Cards */}

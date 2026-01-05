@@ -68,7 +68,10 @@ export async function createLabOrder(orderData: unknown): Promise<{ orderId: str
         return { orderId: null, error: parsed.error.errors[0].message };
     }
     
-    const { patient_id, doctor_id, priority, target_delivery_date, notes, items } = parsed.data;
+    const { 
+        patient_id, doctor_id, priority, target_delivery_date, notes, items,
+        shipping_type, carrier_name, tracking_number, clinic_lat, clinic_lng 
+    } = parsed.data;
 
     try {
         // 2. Get Clinic ID (Securely from User Session)
@@ -83,12 +86,13 @@ export async function createLabOrder(orderData: unknown): Promise<{ orderId: str
          if (staff) {
              clinic_id = staff.clinic_id;
          } else {
-             // Fallback or Error
-             return { orderId: null, error: 'User is not associated with a clinic.' };
+             // Fallback: Check if user is an owner directly (optional)
+             // For now, return error
+             return { orderId: null, error: 'Usuario no asociado a una clínica clínica (Tabla clinic_staff).' };
          }
 
-        // 3. Call Transactional RPC
-        const { data: orderId, error: rpcError } = await supabase.rpc('create_lab_order_transaction', {
+        // 3. Call Transactional RPC (V2 with Logistics)
+        const { data: orderId, error: rpcError } = await supabase.rpc('create_lab_order_transaction_v2', {
             p_clinic_id: clinic_id,
             p_patient_id: patient_id,
             p_doctor_id: doctor_id,
@@ -101,10 +105,39 @@ export async function createLabOrder(orderData: unknown): Promise<{ orderId: str
                 color: item.color,
                 unit_price: item.unit_price,
                 clinical_finding_id: item.clinical_finding_id
-            }))
+            })),
+            // Logistics
+            p_shipping_type: shipping_type,
+            p_carrier_name: carrier_name,
+            p_tracking_number: tracking_number,
+            p_clinic_lat: clinic_lat,
+            p_clinic_lng: clinic_lng
         });
 
+
         if (rpcError) {
+            // Fallback to V1 if V2 doesn't exist yet (Migration safety) or handle error
+            if (rpcError.code === '42883') { // Undefined function
+                 console.warn('RPC v2 not found, falling back to v1 (Logistics data will be lost)');
+                 const { data: orderIdV1, error: rpcErrorV1 } = await supabase.rpc('create_lab_order_transaction', {
+                    p_clinic_id: clinic_id,
+                    p_patient_id: patient_id,
+                    p_doctor_id: doctor_id,
+                    p_priority: priority,
+                    p_target_date: target_delivery_date,
+                    p_notes: notes,
+                    p_items: items.map(item => ({
+                        configuration_id: item.configuration_id,
+                        tooth_number: item.tooth_number,
+                        color: item.color,
+                        unit_price: item.unit_price,
+                        clinical_finding_id: item.clinical_finding_id
+                    }))
+                });
+                if (rpcErrorV1) throw new Error(rpcErrorV1.message);
+                return { orderId: orderIdV1, error: null };
+            }
+
             console.error('RPC Error:', rpcError);
             throw new Error(rpcError.message);
         }

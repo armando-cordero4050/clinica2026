@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,6 +27,7 @@ import {
   type Doctor,
   type Service
 } from './actions'
+import { createServiceDebug } from './service-actions'
 
 interface NewAppointmentModalProps {
     isOpen: boolean
@@ -155,28 +156,44 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
         return () => clearTimeout(timer)
     }, [serviceSearch])
 
+
+
     const handleCreateService = async () => {
         if (!newServiceName.trim()) {
             toast.error('Por favor ingresa el nombre del servicio')
             return
         }
 
-        const result = await createService({
-            name: newServiceName,
-            description: newServiceDescription,
-            price: newServicePrice ? parseFloat(newServicePrice) : undefined
-        })
+        setIsSubmitting(true)
+        try {
+            // Use the new isolated action
+            const result = await createServiceDebug({
+                name: newServiceName,
+                description: newServiceDescription,
+                price: newServicePrice ? parseFloat(newServicePrice) : undefined
+            })
 
-        if (result.success) {
-            toast.success('Servicio creado exitosamente')
-            setSelectedService({ id: result.id || '', name: result.name || '' })
-            setServiceSearch(result.name || '')
-            setShowServiceModal(false)
-            setNewServiceName('')
-            setNewServiceDescription('')
-            setNewServicePrice('')
-        } else {
-            toast.error(`Error: ${result.message}`)
+            console.log('Result from server:', result)
+
+            if (result.success) {
+                toast.success('Servicio creado exitosamente')
+                setSelectedService({ 
+                    id: result.id || '', 
+                    name: result.name || '' 
+                })
+                setServiceSearch(result.name || '')
+                setShowServiceModal(false)
+                setNewServiceName('')
+                setNewServiceDescription('')
+                setNewServicePrice('')
+            } else {
+                toast.error(`Error: ${result.message}`)
+            }
+        } catch (error) {
+            console.error('Error in handleCreateService:', error)
+            toast.error('Error inesperado: ' + String(error))
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -311,6 +328,9 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="sm:max-w-[900px] h-[95vh] max-h-[95vh] p-0 overflow-hidden bg-white gap-0">
                     <DialogTitle className="sr-only">Nueva Cita</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Formulario para crear una nueva cita médica o agendar servicios.
+                    </DialogDescription>
                     <div className="flex flex-col h-full">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -828,7 +848,7 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
                                              />
                                              <Search className="h-4 w-4 absolute right-3 top-3 text-teal-500" />
                                              
-                                             {services.length > 0 && !selectedService && (
+                                             {(services.length > 0 || serviceSearch.length > 1) && !selectedService && (
                                                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
                                                     {services.map((service) => (
                                                         <button
@@ -846,13 +866,19 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
                                                             )}
                                                         </button>
                                                     ))}
+                                                    {services.length === 0 && (
+                                                        <div className="px-4 py-2 text-sm text-gray-500 italic">No se encontraron servicios.</div>
+                                                    )}
                                                     <button
                                                         type="button"
-                                                        onClick={() => setShowServiceModal(true)}
+                                                        onClick={() => {
+                                                            setNewServiceName(serviceSearch) // Pre-fill name
+                                                            setShowServiceModal(true)
+                                                        }}
                                                         className="w-full px-4 py-2 text-left hover:bg-teal-50 flex items-center gap-2 border-t border-gray-100 text-teal-600"
                                                     >
                                                         <Plus className="h-4 w-4" />
-                                                        <span className="font-medium">Crear nuevo servicio</span>
+                                                        <span className="font-medium">Crear "{serviceSearch}"</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -979,8 +1005,8 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
                         <Button variant="ghost" onClick={() => setShowServiceModal(false)}>
                             Cancelar
                         </Button>
-                        <Button onClick={handleCreateService} className="bg-teal-600 hover:bg-teal-700">
-                            Crear Servicio
+                        <Button onClick={handleCreateService} disabled={isSubmitting} className="bg-teal-600 hover:bg-teal-700">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crear Servicio'}
                         </Button>
                     </div>
                 </DialogContent>

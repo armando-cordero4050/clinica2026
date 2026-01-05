@@ -84,33 +84,38 @@ export function ItemsConfiguration({ initialData, initialSuggestions = [], onNex
     const handleNext = () => {
         console.log('handleNext called', { items });
         
-        // Validation
-        const invalidItems = items.filter(i => !i.tooth_number || !i.color);
+        // Validation (Relaxed for presentation)
+        const invalidItems = items.filter(i => !i.color); // Only require color now
         
         if (invalidItems.length > 0) {
             console.log('Validation failed:', invalidItems);
-            toast.error("Por favor completa todos los campos (diente y color).");
+            toast.error("Por favor selecciona el color.");
             return;
         }
 
         // Clean up data
-        const cleanedItems = items.map(i => ({
-            ...i,
-            tooth_number: parseInt(i.tooth_number),
-            unit_price: parseFloat(i.unit_price)
-        }));
+        const cleanedItems = items.map(i => {
+            // Flatten color if it's an object (from ShadeMapSelector) to prevent rendering errors in Review step
+            let colorStr = i.color;
+            if (typeof i.color === 'object' && i.color !== null) {
+                colorStr = Object.values(i.color).filter(Boolean).join('/');
+            }
+
+            return {
+                ...i,
+                // Default to 0 if empty to prevent blocking
+                tooth_number: i.tooth_number ? parseInt(i.tooth_number) : 0,
+                unit_price: parseFloat(i.unit_price),
+                color: String(colorStr)
+            };
+        });
 
         // Use manual date if Express, otherwise use auto-calculated SLA date
         const finalDate = isExpress && deliveryDate 
             ? new Date(deliveryDate) 
             : new Date(autoDeliveryDate);
 
-        console.log('Calling onNext with:', { 
-            items: cleanedItems,
-            target_delivery_date: finalDate,
-            is_express: isExpress,
-            priority: isExpress ? 'urgent' : 'normal'
-        });
+        console.log('Processed items for next step:', cleanedItems);
 
         onNext({ 
             items: cleanedItems,
@@ -157,10 +162,14 @@ export function ItemsConfiguration({ initialData, initialSuggestions = [], onNex
                         </div>
                         <div className="col-span-2">
                             <Input 
-                                type="number" 
+                                type="text"
+                                inputMode="numeric" 
                                 placeholder="11" 
                                 value={item.tooth_number} 
-                                onChange={(e) => updateItem(idx, 'tooth_number', e.target.value)}
+                                onChange={(e) => {
+                                    console.log(`Diente cambiado a: ${e.target.value}`);
+                                    updateItem(idx, 'tooth_number', e.target.value);
+                                }}
                                 className="h-8 text-sm"
                             />
                         </div>
@@ -277,16 +286,8 @@ export function ItemsConfiguration({ initialData, initialSuggestions = [], onNex
                         Revisar
                     </Button>
                     <Button 
-                        onClick={() => {
-                            console.log('Siguiente button clicked!', { 
-                                itemsLength: items.length,
-                                items,
-                                isExpress,
-                                deliveryDate,
-                                autoDeliveryDate
-                            });
-                            handleNext();
-                        }} 
+                        type="button"
+                        onClick={handleNext} 
                         disabled={items.length === 0} 
                         size="sm"
                         className="h-9"

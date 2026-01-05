@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent, DialogClose, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogClose, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -83,6 +83,9 @@ export function EditAppointmentModal({ isOpen, onClose, appointment }: EditAppoi
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-white">
                 <DialogTitle className="sr-only">Detalles de la Cita</DialogTitle>
+                <DialogDescription className="sr-only">
+                    Detalles y acciones para la cita seleccionada.
+                </DialogDescription>
                 
                 {/* Header */}
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">

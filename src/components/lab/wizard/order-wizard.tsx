@@ -71,7 +71,7 @@ export function OrderWizard({ patientId, onClose, initialItems = [] }: OrderWiza
                     </div>
                 </CardHeader>
                 
-                <CardContent className="flex-1 overflow-y-auto p-3 md:p-6 bg-slate-50/50 min-h-0">
+                <CardContent className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 bg-slate-50/50 min-h-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
                     <AnimatePresence mode="wait">
                         {step === 1 && (
 
@@ -100,11 +100,7 @@ export function OrderWizard({ patientId, onClose, initialItems = [] }: OrderWiza
                                 key="step3"
                                 formData={formData as LabOrderFormValues}
                                 onBack={prevStep}
-                                onSubmit={async () => {
-                                    // Submit logic
-                                    console.log('Submitting', formData);
-                                    onClose();
-                                }}
+                                onSubmit={onClose} // Pass onClose directly, ReviewOrder will call it after success
                             />
                         )}
                     </AnimatePresence>

@@ -88,7 +88,7 @@
 
 ### Database Schema (`schema_lab`)
 - **`lab_orders`**: Stores header info (Patient, Doctor, Status, Dates). Linked to `schema_medical.patients`.
-- **`lab_order_items`**: Detail lines. Linked to `lab_configurations`.
+- **`lab_order_items`**: Detail lines. Linked to `public.lab_configurations` (Cross-schema FK to allow using Public Catalog).
 - **`lab_materials` / `lab_types` / `lab_configurations`**: Catalog tables.
 
 ### RPC Integration

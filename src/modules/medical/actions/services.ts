@@ -230,5 +230,160 @@ export async function getAvailableServicesForClinic(clinicId: string) {
     return { success: false, message: error.message }
   }
 
+
   return { success: true, data: data || [] }
+}
+
+/**
+ * Create a new custom service and assign price to clinic
+ */
+export async function createCustomService(data: {
+  clinic_id: string
+  name: string
+  description?: string
+  cost_price_gtq: number
+  cost_price_usd?: number
+  sale_price_gtq: number
+  sale_price_usd?: number
+}) {
+  const supabase = await createClient()
+
+  // 1. Create service in global catalog (public.services)
+  // Note: Ideally we should check for duplicates or have clinic_id in services table for private services.
+  // For now, we insert into global services.
+  // Generate code
+  const code = (data.name.toUpperCase().replace(/[^A-Z0-9]/g, '-') + '-' + Math.floor(Math.random() * 10000)).substring(0, 50)
+
+  // 1. Create service in global catalog (public.services)
+  const { data: newService, error: serviceError } = await supabase
+    .from('services')
+    .insert({
+      name: data.name,
+      code: code,
+      category: 'general',
+      description: data.description,
+      cost_price_gtq: data.cost_price_gtq,
+      cost_price_usd: data.cost_price_usd || 0,
+      is_active: true
+    })
+    .select('id')
+    .single()
+
+  if (serviceError) {
+    console.error('Error creating global service:', serviceError)
+    return { success: false, message: serviceError.message }
+  }
+
+  // 2. Set price for this clinic
+  const { data: priceResult, error: priceError } = await supabase
+    .from('clinic_service_prices')
+    .insert({
+        clinic_id: data.clinic_id,
+        service_id: newService.id,
+        cost_price_gtq: data.cost_price_gtq,
+        cost_price_usd: data.cost_price_usd || 0,
+        sale_price_gtq: data.sale_price_gtq,
+        sale_price_usd: data.sale_price_usd || 0,
+        margin_percentage: (data.cost_price_gtq > 0) 
+            ? ((data.sale_price_gtq - data.cost_price_gtq) / data.cost_price_gtq) * 100 
+            : 0,
+        is_available: true,
+        is_active: true
+    })
+    .select()
+    .single()
+
+    if (priceError) {
+        console.error('Error setting clinic price:', priceError)
+        // Rollback service creation? (Not easy without transaction, but low risk for now)
+        return { success: false, message: 'Servicio creado pero falló la asignación de precio.' }
+    }
+
+  revalidatePath('/dashboard/medical/services')
+  return { success: true, data: newService }
+}
+
+/**
+ * Update global service and clinic price
+ */
+export async function updateService(data: {
+  id: string
+  clinic_id: string
+  name: string
+  description?: string
+  cost_price_gtq: number
+  sale_price_gtq: number
+  is_active: boolean
+}) {
+  const supabase = await createClient()
+
+  // 1. Update global service details
+  const { error: serviceError } = await supabase
+    .from('services')
+    .update({
+      name: data.name,
+      description: data.description,
+      is_active: data.is_active
+    })
+    .eq('id', data.id)
+
+  if (serviceError) {
+    console.error('Error updating service:', serviceError)
+    return { success: false, message: serviceError.message }
+  }
+
+  // 2. Update clinic price
+  // Calculate margin
+  const marginPercentage = data.cost_price_gtq > 0 
+    ? ((data.sale_price_gtq - data.cost_price_gtq) / data.cost_price_gtq) * 100
+    : 0
+
+  const { error: priceError } = await supabase
+    .from('clinic_service_prices')
+    .upsert({
+        clinic_id: data.clinic_id,
+        service_id: data.id,
+        cost_price_gtq: data.cost_price_gtq,
+        sale_price_gtq: data.sale_price_gtq,
+        margin_percentage: marginPercentage,
+        is_active: data.is_active,
+        updated_by: (await supabase.auth.getUser()).data.user?.id
+    }, {
+        onConflict: 'clinic_id,service_id'
+    })
+
+  if (priceError) {
+      console.error('Error updating price:', priceError)
+      // Non-blocking, but good to know
+  }
+
+  revalidatePath('/dashboard/medical/services')
+  return { success: true }
+}
+
+/**
+ * Soft delete service (set is_active = false)
+ */
+export async function deleteService(serviceId: string, clinicId: string) {
+    const supabase = await createClient()
+
+    // 1. Deactivate in global services
+    const { error: serviceError } = await supabase
+        .from('services')
+        .update({ is_active: false })
+        .eq('id', serviceId)
+
+    if (serviceError) {
+        return { success: false, message: serviceError.message }
+    }
+
+    // 2. Deactivate in prices
+    await supabase
+        .from('clinic_service_prices')
+        .update({ is_active: false })
+        .eq('clinic_id', clinicId)
+        .eq('service_id', serviceId)
+
+    revalidatePath('/dashboard/medical/services')
+    return { success: true }
 }
