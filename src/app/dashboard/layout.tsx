@@ -142,6 +142,7 @@ export default function DashboardLayout({
               {(isLabUser || isPlatformAdmin) && (
                 <div className="space-y-1 mt-4">
                   <p className={`text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 ${!isSidebarOpen && 'hidden'}`}>Configuración Lab</p>
+                  <NavItem item={{ name: 'Materiales', href: '/dashboard/core/lab-materials', icon: Package }} pathname={pathname} isOpen={isSidebarOpen} />
                   <NavItem item={{ name: 'Órdenes Global', href: '/dashboard/lab', icon: Package }} pathname={pathname} isOpen={isSidebarOpen} />
                   <NavItem item={{ name: 'Correlativos', href: '/dashboard/settings/correlatives', icon: Hash }} pathname={pathname} isOpen={isSidebarOpen} />
                   <NavItem item={{ name: 'Tiempos (SLA)', href: '/dashboard/settings/sla', icon: Timer }} pathname={pathname} isOpen={isSidebarOpen} />
@@ -176,6 +177,7 @@ export default function DashboardLayout({
                     <NavItem item={{ name: 'Dashboard', href: '/dashboard/medical', icon: LayoutDashboard }} pathname={pathname} isOpen={isSidebarOpen} />
                     <NavItem item={{ name: 'Agenda', href: '/dashboard/medical/appointments', icon: Calendar }} pathname={pathname} isOpen={isSidebarOpen} />
                     <NavItem item={{ name: 'Pacientes', href: '/dashboard/medical/patients', icon: Users }} pathname={pathname} isOpen={isSidebarOpen} />
+                    {userRole === 'clinic_admin' && <NavItem item={{ name: 'Staff', href: '/dashboard/medical/staff', icon: Users }} pathname={pathname} isOpen={isSidebarOpen} />}
                   </div>
 
                   {/* Caja - Financial Management */}
@@ -211,13 +213,6 @@ export default function DashboardLayout({
                 </>
               )}
 
-              {/* SHARED SETTINGS (Visible to Admins only, NOT lab users) */}
-              {(isPlatformAdmin || userRole === 'clinic_admin') && (
-                <div className="pt-4 mt-4 border-t border-gray-100 space-y-1">
-                  <NavItem item={{ name: 'Configuración', href: '/dashboard/settings', icon: Settings }} pathname={pathname} isOpen={isSidebarOpen} />
-                </div>
-              )}
-
               {/* PATIENT / GUEST FALLBACK */}
               {(!isLabUser && !isClinicUser && !isPlatformAdmin) && (
                 <div className="space-y-1">
@@ -228,37 +223,45 @@ export default function DashboardLayout({
             </>
           )}
         </nav>
-
-        {/* USER PROFILE INFO (Footer) */}
-        {!loading && (
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-             {isSidebarOpen ? (
-               <div className="flex flex-col">
-                  <span className="text-xs font-bold text-gray-700 truncate">{userRole?.toUpperCase()}</span>
-                  <span className="text-[10px] text-gray-400">DentalFlow v5 Core</span>
-               </div>
-             ) : (
-               <div className="flex justify-center">
-                  <Badge variant="outline" className="text-[8px] px-1 h-4">{userRole?.charAt(0).toUpperCase()}</Badge>
-               </div>
-             )}
-          </div>
-        )}
-
-        <div className="p-4 border-t border-gray-200">
-          <Button 
-            variant="outline" 
-            className={`w-full flex items-center gap-2 ${!isSidebarOpen && 'px-2 justify-center'}`}
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4" />
-            {isSidebarOpen && <span>Cerrar Sesión</span>}
-          </Button>
-        </div>
       </aside>
 
-      <main className="flex-1">
-        <div className="p-8">
+      <main className="flex-1 flex flex-col">
+        {/* Top Bar with User Profile */}
+        <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-end gap-4">
+          {!loading && (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-gray-700">{userRole?.toUpperCase()}</p>
+                  <p className="text-xs text-gray-500">DentalFlow v5</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-sm font-bold text-blue-600">{userRole?.charAt(0).toUpperCase()}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  title="Configuración"
+                  onClick={() => router.push('/dashboard/settings')}
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  title="Cerrar Sesión"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+        
+        <div className="flex-1 p-8">
           {children}
         </div>
       </main>

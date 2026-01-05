@@ -28,6 +28,7 @@ export interface Patient {
 export interface Doctor {
   id: string
   email: string
+  name: string
   role: string
 }
 
@@ -111,15 +112,44 @@ export async function createPatientInline(data: {
   
   console.log('[createPatientInline] Creating patient:', data)
 
-  // Get current user's clinic_id
-  // Get current user's clinic_id
-  const { data: profile } = await supabase
-    .from('clinic_staff')
-    .select('clinic_id')
-    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-    .single()
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!profile?.clinic_id) {
+  if (!user) {
+    console.error('[createPatientInline] No user found')
+    return { success: false, message: 'Usuario no autenticado' }
+  }
+
+  // Get user's role
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  let clinic_id: string | null = null
+
+  // If super_admin, use the first available clinic
+  if (userData?.role === 'super_admin') {
+    const { data: firstClinic } = await supabase
+      .from('clinics')
+      .select('id')
+      .limit(1)
+      .single()
+    
+    clinic_id = firstClinic?.id || null
+  } else {
+    // Get current user's clinic_id from clinic_staff
+    const { data: profile } = await supabase
+      .from('clinic_staff')
+      .select('clinic_id')
+      .eq('user_id', user.id)
+      .single()
+    
+    clinic_id = profile?.clinic_id || null
+  }
+  
+  if (!clinic_id) {
     console.error('[createPatientInline] No clinic_id found for user')
     return { success: false, message: 'No se pudo identificar la clínica del usuario' }
   }
@@ -131,7 +161,7 @@ export async function createPatientInline(data: {
       first_name: data.first_name.trim(),
       last_name: data.last_name.trim(),
       mobile: data.mobile.trim(),
-      clinic_id: profile.clinic_id,
+      clinic_id: clinic_id,
       is_active: true
     })
     .select('id')
@@ -163,16 +193,44 @@ export async function createAppointment(data: {
 }) {
   const supabase = await createClient()
 
-  console.log('[createAppointment] Creating appointment:', {
-    patient_id: data.patient_id,
-    doctor_id: data.doctor_id,
-    title: data.title,
-    start: data.start.toISOString(),
-    end: data.end.toISOString(),
-    appointment_type: data.appointment_type || 'consultation',
-    reason: data.reason,
-    service_id: data.service_id
-  })
+  // Determine clinic_id for Super Admin context
+  // Get current user and role
+  const { data: { user } } = await supabase.auth.getUser()
+  let clinic_id_override: string | undefined = undefined
+
+  if (user) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (userData?.role === 'super_admin') {
+        // If doctor is selected, try to get their clinic
+        if (data.doctor_id) {
+            const { data: doctorProfile } = await supabase
+                .from('clinic_staff')
+                .select('clinic_id')
+                .eq('user_id', data.doctor_id)
+                .single()
+            
+            if (doctorProfile) {
+                clinic_id_override = doctorProfile.clinic_id
+            }
+        }
+
+        // Fallback if no doctor selected or doctor has no clinic (shouldn't happen for valid docs)
+        // Or if still null, get first clinic
+        if (!clinic_id_override) {
+             const { data: firstClinic } = await supabase
+                .from('clinics')
+                .select('id')
+                .limit(1)
+                .single()
+             clinic_id_override = firstClinic?.id
+        }
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newId, error } = await supabase.rpc('create_appointment_rpc', {
@@ -183,7 +241,8 @@ export async function createAppointment(data: {
     p_end: data.end.toISOString(),
     p_appointment_type: data.appointment_type || 'consultation',
     p_reason: data.reason || null,
-    p_service_id: data.service_id || null
+    p_service_id: data.service_id || null,
+    p_clinic_id: clinic_id_override || null
   } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
   if (error) {
@@ -224,19 +283,29 @@ export async function updateAppointmentStatus(id: string, status: string) {
 export async function getCurrentDoctor(): Promise<Doctor | null> {
   const supabase = await createClient()
   
-  const { data: profile } = await supabase
-    .from('clinic_staff')
-    .select('*')
-    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-    .single()
+  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!profile || !['clinic_doctor', 'doctor'].includes(profile.role)) {
+  if (!user) {
     return null
   }
 
+  const { data: profile } = await supabase
+    .from('clinic_staff')
+    .select('*, user:users(email, name)')
+    .eq('user_id', user.id)
+    .single()
+  
+  if (!profile || !['clinic_doctor', 'doctor', 'clinic_admin'].includes(profile.role)) {
+    return null
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userData = (profile as any).user
+
   return {
-    id: profile.id,
-    email: profile.email || '',
+    id: user.id, // Use user_id instead of profile.id to match getDoctors
+    email: userData?.email || user.email || '',
+    name: userData?.name || userData?.email || user.email || '',
     role: profile.role
   }
 }
@@ -254,32 +323,25 @@ export async function searchGuardians(query: string): Promise<Patient[]> {
 export async function searchServices(query: string) {
   const supabase = await createClient()
   
+  // Use unified public.services view (same as other modules)
   const { data, error } = await supabase
-    .from('clinic_service_prices')
-    .select(`
-      id,
-      service_id,
-      price,
-      lab_services:service_id (
-        id,
-        name,
-        description
-      )
-    `)
-    .ilike('lab_services.name', `%${query}%`)
+    .from('services')
+    .select('id, name, description, sale_price_gtq')
+    .eq('is_active', true)
+    .ilike('name', `%${query}%`)
     .limit(10)
-
+  
   if (error) {
     console.error('[searchServices] Error:', error)
     return []
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return data?.map((item: any) => ({
-    id: item.service_id,
-    name: item.lab_services?.name || '',
-    description: item.lab_services?.description || '',
-    price: item.price
+  // Map to expected format
+  return data?.map((service: any) => ({
+    id: service.id,
+    name: service.name,
+    description: service.description,
+    price: service.sale_price_gtq
   })) || []
 }
 
@@ -367,17 +429,45 @@ export async function createPatientWithGuardian(data: {
 }) {
   const supabase = await createClient()
   
-  // Get current user's clinic_id
-  // Get current user's clinic_id
-  const { data: profile } = await supabase
-    .from('clinic_staff')
-    .select('clinic_id')
-    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+  // Get current user and role
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, message: 'Usuario no autenticado' }
+  }
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
     .single()
+
+  let clinic_id: string | null = null
+
+  if (userData?.role === 'super_admin') {
+    // For Super Admin, use the first available clinic
+    const { data: firstClinic } = await supabase
+      .from('clinics')
+      .select('id')
+      .limit(1)
+      .single()
+    clinic_id = firstClinic?.id || null
+  } else {
+    // For standard staff, get clinic_id from profile
+    const { data: profile } = await supabase
+      .from('clinic_staff')
+      .select('clinic_id')
+      .eq('user_id', user.id)
+      .single()
+    clinic_id = profile?.clinic_id || null
+  }
   
-  if (!profile?.clinic_id) {
+  if (!clinic_id) {
     return { success: false, message: 'No se pudo identificar la clínica del usuario' }
   }
+
+  // Define profile for consistency if needed, but we use clinic_id directly now
+  const profile = { clinic_id }
 
   let guardianId = data.guardian_id
 

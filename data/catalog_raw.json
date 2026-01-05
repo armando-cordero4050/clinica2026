@@ -1,0 +1,77 @@
+[
+  {
+    "id": "zirconio",
+    "name": "Zirconio",
+    "types": [
+      {
+        "id": "monolitico",
+        "name": "Monolítico",
+        "configurations": [
+          { "id": "corona", "name": "Corona", "category": "fixed" },
+          { "id": "puente", "name": "Puente", "category": "fixed", "requires_units": true },
+          { "id": "carilla", "name": "Carilla", "category": "cosmetic" },
+          { "id": "inlay_onlay", "name": "Inlay/Onlay", "category": "restoration" }
+        ]
+      },
+      {
+        "id": "estratificado",
+        "name": "Estratificado",
+        "configurations": [
+          { "id": "corona", "name": "Corona", "category": "fixed" },
+          { "id": "puente", "name": "Puente", "category": "fixed", "requires_units": true }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "disilicato",
+    "name": "Disilicato de Litio",
+    "types": [
+      {
+        "id": "emax_cad",
+        "name": "E-max CAD",
+        "configurations": [
+          { "id": "corona", "name": "Corona", "category": "fixed" },
+          { "id": "carilla", "name": "Carilla", "category": "cosmetic" },
+          { "id": "incrustacion", "name": "Incrustación", "category": "restoration" }
+        ]
+      },
+      {
+        "id": "emax_press",
+        "name": "E-max Press",
+        "configurations": [
+          { "id": "corona", "name": "Corona", "category": "fixed" },
+          { "id": "carilla", "name": "Carilla", "category": "cosmetic" }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "metal_porcelana",
+    "name": "Metal Porcelana",
+    "types": [
+      {
+        "id": "standard",
+        "name": "Estándar",
+        "configurations": [
+          { "id": "corona", "name": "Corona", "category": "fixed" },
+          { "id": "puente", "name": "Puente", "category": "fixed", "requires_units": true }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pmma",
+    "name": "PMMA",
+    "types": [
+      {
+        "id": "provisional",
+        "name": "Provisional",
+        "configurations": [
+          { "id": "corona", "name": "Corona", "category": "fixed" },
+          { "id": "puente", "name": "Puente", "category": "fixed", "requires_units": true }
+        ]
+      }
+    ]
+  }
+]

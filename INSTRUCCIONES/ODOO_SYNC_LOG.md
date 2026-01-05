@@ -1344,3 +1344,107 @@ Cada módulo escribe su propio log con detalles de éxitos y errores.
 [2026-01-04T04:20:36.713Z] [CUSTOMERS] ⚠️ WARNING - Sincronización completada: 2 exitosos, 2 fallidos
 [2026-01-04T04:20:47.492Z] [PRODUCTS] ℹ️ INFO - Iniciando sincronización de products
 [2026-01-04T04:20:49.427Z] [PRODUCTS] ✅ SUCCESS - Sincronización completada: 1 exitosos, 0 fallidos
+[2026-01-04T05:33:33.206Z] [PRODUCTS] ℹ️ INFO - Iniciando sincronización de products
+[2026-01-04T05:33:35.033Z] [PRODUCTS] ✅ SUCCESS - Sincronización completada: 1 exitosos, 0 fallidos
+[2026-01-04T05:37:32.999Z] [CUSTOMERS] ℹ️ INFO - Iniciando sincronización de customers
+[2026-01-04T05:37:34.373Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 14 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:37:34.527Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 13 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:37:34.684Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 12 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:37:34.955Z] [CUSTOMERS] ⚠️ WARNING - Sincronización completada: 3 exitosos, 5 fallidos
+[2026-01-04T05:37:38.743Z] [PRODUCTS] ℹ️ INFO - Iniciando sincronización de products
+[2026-01-04T05:37:40.057Z] [PRODUCTS] ✅ SUCCESS - Sincronización completada: 1 exitosos, 0 fallidos
+[2026-01-04T05:42:18.556Z] [CUSTOMERS] ℹ️ INFO - Iniciando sincronización de customers
+[2026-01-04T05:42:20.045Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 14 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:42:20.217Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 13 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:42:20.357Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 12 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:42:20.611Z] [CUSTOMERS] ⚠️ WARNING - Sincronización completada: 3 exitosos, 5 fallidos
+[2026-01-04T05:42:30.519Z] [PRODUCTS] ℹ️ INFO - Iniciando sincronización de products
+[2026-01-04T05:42:32.455Z] [PRODUCTS] ✅ SUCCESS - Sincronización completada: 1 exitosos, 0 fallidos
+[2026-01-04T05:48:44.577Z] [CUSTOMERS] ℹ️ INFO - Iniciando sincronización de customers
+[2026-01-04T05:48:46.337Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 14 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:48:46.498Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 13 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:48:46.636Z] [CUSTOMERS] ❌ ERROR - Error sincronizando cliente 12 (Julio Perez)
+```json
+{
+  "code": "23505",
+  "message": "duplicate key value violates unique constraint \"clinics_email_key\"",
+  "details": "Key (email)=(dr.julio@clinica1.com) already exists.",
+  "hint": null
+}
+```
+
+[2026-01-04T05:48:46.899Z] [CUSTOMERS] ⚠️ WARNING - Sincronización completada: 3 exitosos, 5 fallidos
+[2026-01-04T05:49:05.925Z] [PRODUCTS] ℹ️ INFO - Iniciando sincronización de products
+[2026-01-04T05:49:07.354Z] [PRODUCTS] ✅ SUCCESS - Sincronización completada: 1 exitosos, 0 fallidos

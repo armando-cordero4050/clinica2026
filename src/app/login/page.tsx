@@ -201,11 +201,10 @@ export default function LoginPage() {
                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-2 text-center">Dev Quick Login ({loginType})</p>
                     <div className="grid grid-cols-2 gap-2">
                         {(loginType === 'clinic' ? [
-                            { label: 'Super Admin', email: 'admin@dentalflow.com', pass: 'Admin123!' },
-                            { label: 'Dr. Pedro', email: 'drpedro@clinica.com', pass: 'Clinica9090!' },
-                            { label: 'Clinica Sonrisas', email: 'info@clinicasonrisas.com', pass: 'Dental123!' }, // Temp pass
-                            { label: 'Azure Interior', email: 'azure.Interior24@example.com', pass: 'Clinica5050!' },
+                            { label: 'Dr. Julio (C1)', email: 'dr.julio@clinica1.com', pass: 'Clinica9090!' },
+                            { label: 'Dr. Celeste (C1)', email: 'dr.celeste@clinica1.com', pass: 'Clinica2026!' },
                         ] : [
+                            { label: 'Super Admin', email: 'admin@dentalflow.com', pass: 'Admin123!' },
                             { label: 'Lab Admin', email: 'admin.lab@a.com', pass: 'Admin123!' },
                             { label: 'Ingresos (Courier)', email: 'ingresos1@a.com', pass: '909080807070' },
                         ]).map((u) => (

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Database, Server } from 'lucide-react'
+import { Database, Server, Shield } from 'lucide-react'
 
 // Imports moved to top of file in next step if necessary, but here is the structured code
 // We need to refactor the whole file to lift state up or use a context, but for simplicity in this file:
@@ -99,6 +99,25 @@ export default function SettingsPage() {
             </CardContent>
             </Card>
         </Link>
+
+        {/* Roles and Permissions Card */}
+        <Link href="/dashboard/settings/roles">
+            <Card className="hover:bg-gray-50 transition-colors cursor-pointer h-full">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-indigo-500" />
+                    Roles y Permisos
+                </CardTitle>
+                <CardDescription>Visualiza la matriz de permisos por rol.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Server className="w-3 h-3" />
+                    Documentación
+                </div>
+            </CardContent>
+            </Card>
+        </Link>
       </div>
 
       <div className="pt-6 border-t font-black uppercase text-xs tracking-widest text-slate-400 mb-4">
@@ -119,27 +138,42 @@ export default function SettingsPage() {
   )
 }
 
+
 function MaintenanceCard({ addLog, updateLogStatus }: { addLog: any, updateLogStatus: any }) {
     return (
         <Card className="border-rose-100 bg-rose-50/30 overflow-hidden group h-fit">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-rose-600">
                     <Database className="w-5 h-5" />
-                    Factory Reset (Punto Cero)
+                    Mantenimiento
                 </CardTitle>
                 <CardDescription className="text-rose-700/70">
-                    Borra absolutamente todos los datos de negocio (Pacientes, Órdenes, Clínicas, Odoo Sync). 
-                    Solo para propósitos de pruebas limpias.
+                    Herramientas avanzadas de gestión de datos y respaldo.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    <ResetButton addLog={addLog} updateLogStatus={updateLogStatus} />
+                    <BackupButton />
                     <div className="my-2 border-t border-rose-200/50"></div>
+                    <ResetButton addLog={addLog} updateLogStatus={updateLogStatus} />
                     <RepairButton addLog={addLog} updateLogStatus={updateLogStatus} />
                 </div>
             </CardContent>
         </Card>
+    )
+}
+
+function BackupButton() {
+    return (
+        <a 
+            href="http://localhost:8000" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md hover:shadow-lg"
+        >
+            <Server className="w-5 h-5" />
+            <span>Abrir Sistema de Respaldo</span>
+        </a>
     )
 }
 

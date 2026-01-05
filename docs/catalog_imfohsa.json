@@ -1,0 +1,65 @@
+{
+  "catalog_source": "https://imfohsalab.genbri.com/pages/orden",
+  "extracted_at": "2026-01-04",
+  "materials": [
+    {
+      "id": "zirconio",
+      "name": "Zirconio",
+      "variants": [
+        "Alemán Estratificado LD 004",
+        "Alemán Monolayer (sector posterior) LD 081",
+        "Alemán CERCON Monolítico Multilayer LD 094",
+        "EconoZir Monolítico Multilayer LD 113"
+      ],
+      "products": [
+        { "type": "Corona", "price": 890.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Carilla", "price": 890.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Incrustación", "price": 890.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "N/A", "price": 0.00, "subtypes": ["Individual", "Ferulizada", "Puente"] }
+      ]
+    },
+    {
+      "id": "disilicato",
+      "name": "Disilicato de Litio",
+      "variants": [
+        "Litio E-MAX (Inyectado)",
+        "Disilicato Alemán SUPRINITY VITA",
+        "E-MAX fresado"
+      ],
+      "products": [
+        { "type": "Corona", "price": 725.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Carilla", "price": 690.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Incrustación", "price": 450.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "N/A", "price": 0.00, "subtypes": ["Individual", "Ferulizada", "Puente"] }
+      ]
+    },
+    {
+      "id": "metal_porcelana",
+      "name": "Metal Porcelana",
+      "note": "SOLO SE REALIZA EN SOBRE IMPLANTE. PARA NORMALES SERIA ZIRCONIO",
+      "variants": [
+        "Metal Porcelana sobre implante"
+      ],
+      "products": [
+        { "type": "Corona", "price": 450.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Carilla", "price": 450.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Incrustación", "price": 450.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "N/A", "price": 450.00, "subtypes": ["Individual", "Ferulizada", "Puente"] }
+      ]
+    },
+    {
+      "id": "pmma",
+      "name": "PMMA",
+      "variants": [
+        "PMMA LD 054",
+        "PMMA Multilayer LD 104"
+      ],
+      "products": [
+        { "type": "Corona", "price": 275.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Carilla", "price": 275.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "Incrustación", "price": 275.00, "subtypes": ["Individual", "Ferulizada", "Puente"] },
+        { "type": "N/A", "price": 0.00, "subtypes": ["Individual", "Ferulizada", "Puente"] }
+      ]
+    }
+  ]
+}

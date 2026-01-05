@@ -111,6 +111,24 @@ export async function getPatients(clinicId: string) {
     return { success: true, data: data as Patient[] }
 }
 
+export async function getPatient(patientId: string) {
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('id', patientId)
+        .eq('is_active', true)
+        .single()
+
+    if (error) {
+        console.error("Error fetching patient:", JSON.stringify(error, null, 2))
+        return { success: false, message: error.message, data: null }
+    }
+
+    return { success: true, data, message: null }
+}
+
 export async function getPatientStats(clinicId: string) {
     const supabase = await createClient()
     

@@ -9,6 +9,7 @@ export interface ToothCondition {
   condition: string
   notes?: string
   updated_at: string
+  lab_order_id?: string
 }
 
 /**

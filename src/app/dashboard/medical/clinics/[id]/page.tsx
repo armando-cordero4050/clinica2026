@@ -111,7 +111,7 @@ export default async function ClinicDetailPage({ params }: PageProps) {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="info" className="w-full">
+      <Tabs defaultValue="info" className="w-full" id="clinic-details-tabs">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="info" className="flex items-center gap-2">
             <Info className="h-4 w-4" />

@@ -227,3 +227,39 @@ Regla: no borrar entradas; si algo se corrige, se agrega una nota en el PR sigui
 - SQL de mapeo aplicado.
 **Riesgos:**
 - Si se agregan nuevos puestos en el futuro, requieren actualización del SQL Case.
+
+---
+
+## PR #13 — Appointment Modal Enhancement & Service Pricing Investigation
+
+**Fecha:** 2026-01-03  
+**Objetivo:** Mejorar el modal de citas para mostrar nombres de doctores y servicios sincronizados con Odoo. Investigar problema de precios de venta en servicios.
+
+**Cambios:**
+- **DB**: Migración `20260205000035_update_get_doctors_rpc.sql`.
+  - Actualizado `get_doctors_rpc()` para retornar nombres de doctores desde `schema_core.users`.
+  - Expandido filtro de roles para incluir `'doctor'`, `'admin'`, `'clinic_doctor'`.
+- **Backend**: `src/app/dashboard/medical/appointments/actions.ts`.
+  - Actualizada interfaz `Doctor` para incluir campo `name`.
+  - Corregida query `searchServices()` para usar `sale_price_gtq` y tabla `services`.
+  - Implementado filtrado client-side para búsqueda de servicios (workaround para limitación de Supabase query builder).
+- **Frontend**: `src/app/dashboard/medical/appointments/new-appointment-modal.tsx`.
+  - Actualizado display de doctores de `{doc.email}` a `{doc.name || doc.email}`.
+- **Investigación**: Identificado desajuste de columnas en precios de servicios.
+  - **Hallazgo**: Odoo sync envía `p_price` (list_price) → RPC `sync_service_from_odoo`.
+  - **Hallazgo**: DB tiene `cost_price_gtq`/`cost_price_usd`, UI espera `base_price`.
+  - **Hallazgo**: Falta columna `sale_price_gtq` en tabla `services` para almacenar precio de venta.
+
+**Verificación:**
+- ✅ Código compilado sin errores TypeScript.
+- ⚠️ Migración creada pero NO aplicada (requiere acción manual del usuario).
+- 🔍 Problema de precios diagnosticado, pendiente de solución.
+
+**Riesgos:**
+- La migración debe aplicarse manualmente antes de que los nombres de doctores aparezcan.
+- El desajuste de precios afecta funcionalidad crítica de negocio (cotizaciones/facturas).
+
+**Próximos Pasos:**
+- Aplicar migración `20260205000035_update_get_doctors_rpc.sql`.
+- Inspeccionar RPC `sync_service_from_odoo` para entender mapeo de columnas.
+- Alinear esquema DB, lógica de sync y expectativas de UI para precios.

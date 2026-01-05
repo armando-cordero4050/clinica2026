@@ -1,13 +1,10 @@
 import { Suspense } from 'react'
-import { getClinicServicePrices, getLabServices } from '@/modules/medical/actions/services'
-import { getLastSyncInfo } from '@/modules/medical/actions/sync-services'
+import { getLabServices } from '@/modules/medical/actions/services'
 import { getUserClinic } from '@/modules/medical/actions/clinics'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Package, DollarSign } from 'lucide-react'
 import { ServicesTable } from './services-table'
-import { AddServiceModal } from './add-service-modal'
-import { SyncDebugPanel } from './sync-debug-panel'
 
 export const metadata = {
   title: 'Servicios | DentalFlow',
@@ -44,23 +41,15 @@ async function ServicesContent() {
 
   const clinic = clinicResult.data
 
-  // Fetch clinic service prices, lab services, and last sync in parallel
-  const [pricesResult, labServicesResult, lastSyncResult] = await Promise.all([
-    getClinicServicePrices(clinic.id),
-    getLabServices(),
-    getLastSyncInfo(clinic.id),
-  ])
+  // Fetch lab services (same as Core/Lab modules)
+  const labServicesResult = await getLabServices()
 
-  const servicePrices = pricesResult.success ? pricesResult.data : []
-  const labServices = labServicesResult.success ? labServicesResult.data : []
-  const lastSync = lastSyncResult.success ? lastSyncResult.data : null
+  const services = labServicesResult.success ? labServicesResult.data : []
 
   // Calculate stats
-  const totalServices = servicePrices.length
-  const availableServices = servicePrices.filter(s => s.is_available).length
-  const avgMargin = servicePrices.length > 0
-    ? servicePrices.reduce((sum, s) => sum + (s.margin_percentage || 0), 0) / servicePrices.length
-    : 0
+  const totalServices = services?.length || 0
+  const availableServices = services?.filter(s => s.is_active).length || 0
+  const avgMargin = 0 // Not applicable for unified view
 
   return (
     <>
@@ -72,8 +61,6 @@ async function ServicesContent() {
             Gestiona los precios de venta de servicios de laboratorio
           </p>
         </div>
-
-        <AddServiceModal clinicId={clinic.id} labServices={labServices} />
       </div>
 
       {/* Stats Cards */}
@@ -115,11 +102,8 @@ async function ServicesContent() {
         </Card>
       </div>
 
-      {/* Debug Panel - Development Only */}
-      <SyncDebugPanel clinicId={clinic.id} lastSyncInfo={lastSync} />
-
       {/* Services Table */}
-      <ServicesTable services={servicePrices} clinicId={clinic.id} />
+      <ServicesTable services={services || []} clinicId={clinic.id} />
     </>
   )
 }

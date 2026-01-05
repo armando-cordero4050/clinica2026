@@ -10,6 +10,7 @@ interface OdooProduct {
   name: string
   default_code: string | false
   list_price: number
+  standard_price: number  // Precio de costo
   detailed_type: string
   categ_id: [number, string] | false
   active: boolean
@@ -64,7 +65,8 @@ export async function syncProductsFromOdoo() {
             p_name: p.name,
             p_code: p.default_code || '', // Empty string if false/null
             p_category: Array.isArray(p.categ_id) ? p.categ_id[1] : 'Unknown',
-            p_price: p.list_price || 0,
+            p_list_price: p.list_price || 0,        // Precio de venta
+            p_standard_price: p.standard_price || 0, // Precio de costo
             p_type: p.detailed_type || 'service',
             p_raw_data: p
         }

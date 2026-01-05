@@ -170,3 +170,89 @@ DATA: {
   "message": "Staff creado exitosamente"
 }
 --------------------------------------------------------------------------------
+[2026-01-04T16:44:44.327Z] [INFO] [CLIENT] INTENTO DE SUBMIT
+DATA: {
+  "name": "Celeste Alvarez",
+  "email": "dr.celeste@clinica1.com",
+  "jobPosition": "Administrador de Clínica",
+  "phone": "52039696",
+  "mobile": "55331144",
+  "title": "Dra.",
+  "notes": ""
+}
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:44.367Z] [INFO] [CLIENT] LLAMANDO SERVER ACTION createClinicStaff
+DATA: {
+  "clinicId": "f3ce19fa-c51e-448f-949a-48550b77a1f2"
+}
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:44.383Z] [INFO] INICIO createClinicStaff
+DATA: {
+  "clinicId": "f3ce19fa-c51e-448f-949a-48550b77a1f2",
+  "name": "Celeste Alvarez",
+  "email": "dr.celeste@clinica1.com",
+  "jobPosition": "Administrador de Clínica",
+  "phone": "52039696",
+  "mobile": "55331144",
+  "title": "Dra.",
+  "notes": ""
+}
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:45.372Z] [DEBUG] User not found in Auth. Creating...
+DATA: "dr.celeste@clinica1.com"
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:45.694Z] [INFO] Auth User Created
+DATA: "c18a74e0-3598-4e2a-a5ad-cb5079b70fc4"
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:46.708Z] [DEBUG] Connecting to Odoo...
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:47.276Z] [DEBUG] Authenticated. Preparing payload...
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:47.277Z] [DEBUG] Sending to Odoo:
+DATA: {
+  "name": "Celeste Alvarez",
+  "email": "dr.celeste@clinica1.com",
+  "function": "Administrador de Clínica",
+  "phone": "52039696",
+  "mobile": "55331144",
+  "comment": "Título: Dra.",
+  "parent_id": 7,
+  "type": "contact",
+  "customer_rank": 0,
+  "supplier_rank": 0
+}
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:47.351Z] [INFO] Created in Odoo ID: 16. Syncing RPC...
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:47.351Z] [DEBUG] Params RPC
+DATA: {
+  "p_odoo_contact_id": 16,
+  "p_clinic_odoo_id": 7,
+  "p_name": "Celeste Alvarez",
+  "p_email": "dr.celeste@clinica1.com",
+  "p_job_position": "Administrador de Clínica",
+  "p_phone": "52039696",
+  "p_mobile": "55331144",
+  "p_raw_data": {
+    "name": "Celeste Alvarez",
+    "email": "dr.celeste@clinica1.com",
+    "function": "Administrador de Clínica",
+    "phone": "52039696",
+    "mobile": "55331144",
+    "comment": "Título: Dra.",
+    "parent_id": 7,
+    "type": "contact",
+    "customer_rank": 0,
+    "supplier_rank": 0,
+    "id": 16
+  }
+}
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:47.614Z] [INFO] Success Staff Created
+--------------------------------------------------------------------------------
+[2026-01-04T16:44:47.670Z] [INFO] [CLIENT] EXITO SERVER ACTION
+DATA: {
+  "success": true,
+  "message": "Staff creado exitosamente"
+}
+--------------------------------------------------------------------------------

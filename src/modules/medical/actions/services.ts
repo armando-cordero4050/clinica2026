@@ -9,6 +9,8 @@ export interface Service {
   description?: string
   category?: string
   image_url?: string
+  sale_price_gtq: number  // Added - Odoo list_price
+  sale_price_usd: number  // Added
   cost_price_gtq: number
   cost_price_usd: number
   turnaround_days?: number

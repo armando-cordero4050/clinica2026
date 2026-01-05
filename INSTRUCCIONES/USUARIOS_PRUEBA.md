@@ -65,6 +65,15 @@ Estos usuarios fueron sincronizados automáticamente desde Odoo y representan lo
 - **Puesto:** Administrador Clínica
 - **Estado:** ✅ Activo (sincronizado desde Odoo)
 
+### Dr. Celeste (Clínica 1)
+- **Usuario:** `dr.celeste@clinica1.com`
+- **Password:** `Clinica2026!`
+- **Rol:** `clinic_doctor`
+- **Clínica:** Clínica 1
+- **Puesto:** Doctor
+- **Estado:** ✅ Activo
+- **Notas:** Usuario de prueba para validar funcionalidades de doctor
+
 ---
 
 ## Usuarios de Laboratorio

@@ -1,37 +1,42 @@
-import { Client } from 'pg'
-import * as fs from 'fs'
-import * as path from 'path'
-import dotenv from 'dotenv'
 
-// Load env vars
-dotenv.config({ path: path.join(__dirname, '../.env') })
+import { Client } from 'pg';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
 
-async function applyMigration() {
-  const connectionString = process.env.DATABASE_URL
-  
-  if (!connectionString) {
-    console.error('❌ Error: DATABASE_URL not found in .env')
-    process.exit(1)
-  }
+dotenv.config();
 
-  const client = new Client({ connectionString })
+const DATABASE_URL = process.env.DATABASE_URL;
 
-  try {
-    await client.connect()
-    console.log('✅ Connected to Database')
-
-    const migrationPath = path.join(__dirname, '../supabase/migrations/20260205000030_fix_staff_role_mapping.sql')
-    const sql = fs.readFileSync(migrationPath, 'utf8')
-
-    console.log('🚀 Applying migration: fix_staff_role_mapping.sql...')
-    await client.query(sql)
-    
-    console.log('✅ Migration applied successfully!')
-  } catch (err) {
-    console.error('❌ Migration failed:', err)
-  } finally {
-    await client.end()
-  }
+if (!DATABASE_URL) {
+    console.error('DATABASE_URL not found in .env.local');
+    process.exit(1);
 }
 
-applyMigration()
+const migrationFile = process.argv[2];
+if (!migrationFile) {
+    console.error('Please provide a migration file path.');
+    process.exit(1);
+}
+
+async function applyMigration() {
+    const client = new Client({
+        connectionString: DATABASE_URL,
+        ssl: { rejectUnauthorized: false } // Required for Supabase
+    });
+
+    try {
+        await client.connect();
+        const sql = fs.readFileSync(migrationFile, 'utf8');
+        console.log(`Applying migration: ${migrationFile}`);
+        await client.query(sql);
+        console.log('Migration applied successfully.');
+    } catch (err) {
+        console.error('Migration failed:', err);
+        process.exit(1);
+    } finally {
+        await client.end();
+    }
+}
+
+applyMigration();

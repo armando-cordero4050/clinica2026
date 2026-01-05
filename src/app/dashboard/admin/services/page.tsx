@@ -61,7 +61,7 @@ export default async function AdminServicesPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right font-mono">
-                                            Q {svc.base_price?.toFixed(2)}
+                                            Q {(svc.sale_price_gtq || 0).toFixed(2)}
                                         </TableCell>
                                         <TableCell className="text-center font-bold text-gray-700">
                                             {svc.turnaround_days ? (

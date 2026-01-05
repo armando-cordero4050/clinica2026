@@ -183,3 +183,20 @@ Se implementó un sistema de "Flight Recorder" (`src/lib/logger.ts`) que escribi
 1.  **Inmediata**: Se creó un script (`sync-repair.ts`) para buscar la clínica en Odoo por email y enlazarla.
 2.  **Permanente**: Se añadió un botón **"Reparar Vínculos Odoo"** en `Dashboard > Settings > Mantenimiento` para que el admin pueda corregir esto sin tocar código.
 3.  **Prevención**: Se añadirá validación bloqueante en UI si la clínica no está sincronizada.
+
+---
+
+## 2026-02-05: Error XX000 en Migración (Apply Script)
+
+### Error
+`The command failed with exit code: 1` ... `code: 'XX000'` al ejecutar `scripts/apply_migration.ts`.
+
+### Causa
+El script `apply_migration.ts` utiliza una conexión directa de cliente `pg` que puede fallar por restricciones de red, firewall de Supabase o timeout en entornos inestables.
+
+### Solución
+Utilizar el método alternativo documentado en la guía de conexión: **Ejecutor vía RPC**.
+Este método (`scripts/db-executor-rpc.ts`) invoca una función segura `public.exec_sql` en Supabase a través de HTTPS (fetch), evitando la conexión directa de socket PostgreSQL.
+
+### Lección Aprendida
+Antes de pedir al usuario que ejecute SQL manualmente por un fallo de conexión, intentar el método de "RPC Executor" si está disponible.

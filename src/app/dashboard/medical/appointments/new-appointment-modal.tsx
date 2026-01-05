@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dialog, DialogContent, DialogClose, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -309,22 +309,16 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="sm:max-w-[900px] max-h-[90vh] p-0 overflow-hidden bg-white gap-0">
+                <DialogContent className="sm:max-w-[900px] h-[95vh] max-h-[95vh] p-0 overflow-hidden bg-white gap-0">
                     <DialogTitle className="sr-only">Nueva Cita</DialogTitle>
                     <div className="flex flex-col h-full">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                             <h2 className="text-lg font-semibold text-gray-900">Crear una cita</h2>
-                            <DialogClose asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600">
-                                    <span className="sr-only">Cerrar</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </Button>
-                            </DialogClose>
                         </div>
 
                         <div className="overflow-y-auto flex-1">
-                            <div className="p-8 grid grid-cols-2 gap-12">
+                            <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-12">
                                 {/* LEFT COLUMN */}
                                 <div className="space-y-6">
                                     {/* Patient Selection */}
@@ -757,6 +751,7 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
                                     {/* Doctor Selection */}
                                     <div className="space-y-2">
                                         <Label className="text-gray-500 font-medium ml-1">Doctor</Label>
+                                        
                                         <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
                                             <SelectTrigger className="border-gray-200 h-10 w-full text-gray-800">
                                                 <SelectValue placeholder="Seleccionar Doctor" />
@@ -764,7 +759,7 @@ export function NewAppointmentModal({ isOpen, onClose, defaultDate }: NewAppoint
                                             <SelectContent>
                                                 {doctors.map(doc => (
                                                     <SelectItem key={doc.id} value={doc.id}>
-                                                        {doc.email}
+                                                        {doc.name || doc.email}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

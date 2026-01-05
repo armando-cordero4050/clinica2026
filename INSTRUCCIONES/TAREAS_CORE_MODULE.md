@@ -60,3 +60,9 @@ Este documento detalla las tareas de refinamiento para los módulos administrati
 ### Control de Visualización Dinámico
 - [ ] Usar `odoo_field_mappings` para gestionar qué campos del `raw_data` se visualizan en la UI.
 - [ ] Permitir al Super Admin marcar cuáles campos se sincronizan con las tablas operativas (`clinics`, `services`) y cuáles son solo informativos.
+
+## 11. Agenda Médica / Citas
+- [x] **Selección de Doctor**: Permitir ver todos los doctores para Super Admin (RPC fix).
+- [x] **Modal Responsivo**: Ajustar altura y scroll para evitar cortes en pantallas pequeñas.
+- [x] **UX**: Corregir doble botón de cierre en modal.
+- [ ] **Creación Citas (Super Admin)**: Permitir crear citas sin estar vinculado a una clínica específica (usar primera disponible o selector).

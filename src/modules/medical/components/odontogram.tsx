@@ -28,11 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Package } from 'lucide-react'
+
 import { Save, Plus, Trash2, Printer, Edit, Settings } from 'lucide-react'
 import { getToothSVG } from './tooth-svg'
-import { OrderModal } from './order-modal'
+import { OrderWizard } from '@/components/lab/wizard/order-wizard'
 import { createBudget } from '../actions/budgets'
-import { createLabOrder } from '../actions/orders'
+
 import { toast } from 'sonner' // Assuming sonner or useToast from shadcn
 
 // MOCK SERVICES CATALOG (Simulating Core Module)
@@ -96,18 +98,32 @@ const SURFACES = [
 
 // Clinical findings with professional colors
 const FINDINGS = [
-  { id: 'healthy', name: 'Sano', color: '#ffffff', treatment: 'N/A' },
-  { id: 'caries', name: 'Caries', color: '#ff4d4d', treatment: 'Resina/Amalgama' },
-  { id: 'amalgam', name: 'Amalgama', color: '#6699cc', treatment: 'Existente' },
-  { id: 'composite', name: 'Resina', color: '#b3d9ff', treatment: 'Existente' },
-  { id: 'endodoncia', name: 'Endodoncia', color: '#f97316', treatment: 'Tratamiento de conducto' },
-  { id: 'corona', name: 'Corona', color: '#eab308', treatment: 'Corona' },
-  { id: 'extraccion', name: 'Extracción', color: '#dc2626', treatment: 'Extracción' },
-  { id: 'implante', name: 'Implante', color: '#3b82f6', treatment: 'Implante dental' },
-  { id: 'protesis', name: 'Prótesis', color: '#8b5cf6', treatment: 'Prótesis' },
-  { id: 'sealant', name: 'Sellante', color: '#ccffcc', treatment: 'Sellante' },
-  { id: 'fracture', name: 'Fractura', color: '#dc2626', treatment: 'Reparación' },
-  { id: 'ausente', name: 'Ausente', color: '#9ca3af', treatment: 'N/A' },
+  { id: 'healthy', name: 'Sano', color: '#ffffff', treatment: 'N/A', category: 'general' },
+  { id: 'caries', name: 'Caries', color: '#ff4d4d', treatment: 'Resina/Amalgama', category: 'general' },
+  { id: 'amalgam', name: 'Amalgama', color: '#6699cc', treatment: 'Existente', category: 'general' },
+  { id: 'composite', name: 'Resina', color: '#b3d9ff', treatment: 'Existente', category: 'general' },
+  { id: 'endodoncia', name: 'Endodoncia', color: '#f97316', treatment: 'Tratamiento de conducto', category: 'general' },
+  { id: 'extraccion', name: 'Extracción', color: '#dc2626', treatment: 'Extracción', category: 'general' },
+  { id: 'sealant', name: 'Sellante', color: '#ccffcc', treatment: 'Sellante', category: 'general' },
+  { id: 'fracture', name: 'Fractura', color: '#dc2626', treatment: 'Reparación', category: 'general' },
+  { id: 'ausente', name: 'Ausente', color: '#9ca3af', treatment: 'N/A', category: 'general' },
+  
+  // Lab items (Prótesis Fija)
+  { id: 'corona', name: 'Corona', color: '#eab308', treatment: 'Corona', category: 'lab' },
+  { id: 'carilla', name: 'Carilla', color: '#facc15', treatment: 'Carilla Estética', category: 'lab' },
+  { id: 'puente', name: 'Puente', color: '#ca8a04', treatment: 'Pilar de Puente', category: 'lab' },
+  { id: 'incrustacion', name: 'Incrustación', color: '#d97706', treatment: 'Inlay/Onlay', category: 'lab' },
+  { id: 'perno', name: 'Perno Colado', color: '#78350f', treatment: 'Perno Muñón', category: 'lab' },
+
+  // Lab items (Removible & Otros)
+  { id: 'protesis_total', name: 'Prótesis Total', color: '#8b5cf6', treatment: 'Prótesis Total', category: 'lab' },
+  { id: 'protesis_removible', name: 'P. Removible', color: '#a78bfa', treatment: 'Esquelético', category: 'lab' },
+  { id: 'guarda', name: 'Guarda', color: '#10b981', treatment: 'Guarda Oclusal', category: 'lab' },
+  { id: 'alineador', name: 'Alineador', color: '#06b6d4', treatment: 'Ortodoncia Invisible', category: 'lab' },
+  { id: 'retenedor', name: 'Retenedor', color: '#0ea5e9', treatment: 'Retenedor', category: 'lab' },
+  
+  // Implants (Clinical + Lab parts)
+  { id: 'implante', name: 'Implante', color: '#3b82f6', treatment: 'Implante dental', category: 'lab' },
 ]
 
 interface ToothState {
@@ -141,6 +157,7 @@ interface ToothFinding {
   marginValue: number
   isLabService: boolean
   orderId?: string
+  notes?: string
 }
 
 interface OdontogramProps {
@@ -162,6 +179,7 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
   const [selectedSurface, setSelectedSurface] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedFinding, setSelectedFinding] = useState<string>('')
+  const [findingNotes, setFindingNotes] = useState<string>('')
   const [teethStates, setTeethStates] = useState<Map<number, ToothState>>(new Map())
   const [findings, setFindings] = useState<ToothFinding[]>([])
   const [hoveredSurface, setHoveredSurface] = useState<{ tooth: number; surface: string } | null>(null)
@@ -240,7 +258,8 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
                             price: 0,
                             marginType: 'percent',
                             marginValue: 0,
-                            isLabService: false
+                            isLabService: false,
+                            orderId: record.lab_order_id
                          })
                     }
                 }
@@ -263,63 +282,13 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
       setOrderModalOpen(true)
   }
 
-  const handleConfirmOrder = async (orderData: any) => {
-      console.log('🔵 handleConfirmOrder called with:', orderData)
-      
-      // We need to map finding IDs back to service IDs if createLabOrder expects service IDs
-      // Current odontogram logic: orderData.items contains finding.id (synthetic)
-      // We should extract the actual serviceIds from findings
-      const serviceIds = findings
-        .filter(f => orderData.items.includes(f.id))
-        .map(f => f.serviceId)
-        .filter(Boolean) as string[]
-
-      console.log('🔵 Extracted serviceIds:', serviceIds)
-      console.log('🔵 Patient ID:', patientId)
-      console.log('🔵 Patient Name:', patientName)
-
-      if (serviceIds.length === 0) {
-          toast.error('No se encontraron servicios válidos para la orden')
-          return
-      }
-
-      try {
-          toast.loading('Creando orden de laboratorio...')
-          
-          // Create Lab Order via API
-          // Create Lab Order via API
-          const result = await createLabOrder({
-              patient_id: patientId,
-              patient_name: patientName || `Paciente ${patientId}`, 
-              items: serviceIds, 
-              delivery_type: orderData.delivery_type,
-              digital_files: orderData.digital_files,
-              shipping_info: orderData.shipping_info,
-              notes: orderData.notes,
-              estimated_delivery: orderData.estimated_delivery ? new Date(orderData.estimated_delivery).toISOString() : undefined
-          })
-
-          console.log('🔵 createLabOrder result:', result)
-
-          if (result.success && result.data) {
-              // Update status of items locally based on order creation
-              const newFindings = findings.map(f => {
-                  if (serviceIds.includes(f.serviceId || '')) { 
-                      return { ...f, status: 'in_progress' as const, orderId: result.data.id } 
-                  }
-                  return f
-              })
-              setFindings(newFindings)
-              setOrderModalOpen(false)
-              toast.success(`✅ Orden creada exitosamente (ID: ${result.data.id})`)
-          } else {
-              toast.error(`❌ Error al crear orden: ${result.message || 'Error desconocido'}`)
-          }
-      } catch (error: any) {
-          console.error('🔴 Error in handleConfirmOrder:', error)
-          toast.error(`❌ Error inesperado: ${error.message}`)
-      }
+  const handleUpdateOrder = (finding: ToothFinding) => {
+    // Re-open wizard with existing data
+    // NOTE: Currently backend creates a NEW order. Future refactor needed for true "Update".
+    handleOrderClick(finding) 
   }
+
+
 
   const handleSaveBudget = async () => {
       if (findings.length === 0) return
@@ -403,6 +372,7 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
       setSelectedSurface(surfaceId)
       setDialogOpen(true)
       setSelectedFinding('')
+      setFindingNotes('')
       setSelectedServiceId('')
       setPriceConfig({ cost: 0, price: 0, marginType: 'percent', marginValue: 30 })
   }
@@ -435,7 +405,7 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
         tooth_number: selectedTooth,
         surface: selectedSurface,
         condition: selectedFinding,
-        notes: '' // TODO: Add notes field in dialog
+        notes: findingNotes
     })
 
     if (!result.success) {
@@ -480,14 +450,33 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
       price: priceConfig.price,
       marginType: priceConfig.marginType,
       marginValue: priceConfig.marginValue,
-      isLabService: servicesCatalog.find((s: any) => s.id === selectedServiceId)?.category === 'lab' || false
+      marginType: priceConfig.marginType,
+      marginValue: priceConfig.marginValue,
+      isLabService: servicesCatalog.find((s: any) => s.id === selectedServiceId)?.category === 'lab' || false,
+      notes: findingNotes
     }
+
 
     setFindings((prev) => [...prev, newFinding])
     setDialogOpen(false)
     setSelectedTooth(null)
     setSelectedSurface(null)
     setSelectedFinding('')
+    setFindingNotes('')
+
+    // Trigger Lab Order Wizard automatically if it's a lab service
+    if (newFinding.isLabService) {
+        if (confirm(`El tratamiento "${newFinding.findingName}" requiere trabajo de laboratorio. ¿Deseas crear la orden ahora?`)) {
+            const catalogService = servicesCatalog.find((s: any) => s.id === selectedServiceId)
+            setItemsToOrder([{
+                id: newFinding.id, // we might not need this ID in wizard, but okay
+                toothNumber: newFinding.toothNumber,
+                treatment: newFinding.findingName + ' - ' + (catalogService?.name || newFinding.treatment),
+                sla_days: catalogService?.sla_days || 3
+            }])
+            setOrderModalOpen(true)
+        }
+    }
   }
 
   const handleDeleteFinding = (id: string) => {
@@ -683,7 +672,17 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
       {findings.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Hallazgos Clínicos Registrados</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Hallazgos Clínicos Registrados</CardTitle>
+              <Button 
+                onClick={() => setOrderModalOpen(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-semibold"
+                size="lg"
+              >
+                <Package className="h-5 w-5 mr-2" />
+                CREAR ORDEN DE LAB
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -699,7 +698,10 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
               </TableHeader>
               <TableBody>
                 {findings.map((finding) => (
-                  <TableRow key={finding.id} className="hover:bg-gray-50">
+                  <TableRow 
+                    key={finding.id} 
+                    className={`hover:bg-gray-50 ${finding.isLabService ? 'bg-amber-50 border-l-4 border-l-amber-400' : ''}`}
+                  >
                     <TableCell className="font-mono text-lg font-bold">{finding.toothNumber}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -741,9 +743,9 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
                                 size="sm" 
                                 variant={finding.orderId ? "outline" : "default"}
                                 className={`h-7 text-xs ${finding.orderId ? 'border-amber-500 text-amber-600 hover:bg-amber-50' : 'bg-cyan-600 hover:bg-cyan-700'}`} 
-                                onClick={() => handleOrderClick(finding)}
+                                onClick={() => finding.orderId ? handleUpdateOrder(finding) : handleOrderClick(finding)}
                              >
-                                {finding.orderId ? <><Edit className="w-3 h-3 mr-1"/>Editar</> : 'Pedir'}
+                                {finding.orderId ? <><Edit className="w-3 h-3 mr-1"/>Actualizar</> : 'Pedir'}
                              </Button>
                          )}
                         <Button variant="ghost" size="icon" onClick={() => handleDeleteFinding(finding.id)}>
@@ -774,83 +776,140 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
             {/* 1. SELECCIÓN DE HALLAZGO */}
             <div>
               <Label className="text-xs font-bold text-gray-500 uppercase mb-3 block">1. Diagnóstico / Hallazgo</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {FINDINGS.map((finding) => (
-                  <Button
-                    key={finding.id}
-                    variant={selectedFinding === finding.id ? 'default' : 'outline'}
-                    className={`justify-start gap-2 h-auto py-2 px-2 text-xs ${selectedFinding === finding.id ? 'bg-gray-800 text-white' : ''}`}
-                    onClick={() => setSelectedFinding(finding.id)}
-                  >
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: finding.color }} />
-                    <span className="truncate">{finding.name}</span>
-                  </Button>
-                ))}
+              
+              {/* General / Clinical Section */}
+              <div className="mb-4">
+                  <h4 className="text-xs font-semibold text-gray-400 mb-2 border-b pb-1">Procedimientos Clínicos</h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {FINDINGS.filter(f => f.category === 'general').map((finding) => (
+                      <Button
+                        key={finding.id}
+                        variant={selectedFinding === finding.id ? 'default' : 'outline'}
+                        className={`justify-start gap-2 h-auto py-2 px-2 text-xs ${selectedFinding === finding.id ? 'bg-gray-800 text-white' : ''}`}
+                        onClick={() => setSelectedFinding(finding.id)}
+                      >
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: finding.color }} />
+                        <span className="truncate">{finding.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+              </div>
+
+              {/* Lab Section */}
+              <div>
+                  <h4 className="text-xs font-semibold text-amber-500 mb-2 border-b border-amber-100 pb-1 flex items-center gap-2">
+                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                     Laboratorio & Prótesis
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {FINDINGS.filter(f => f.category === 'lab').map((finding) => (
+                      <Button
+                        key={finding.id}
+                        variant={selectedFinding === finding.id ? 'default' : 'outline'}
+                        className={`justify-start gap-2 h-auto py-2 px-2 text-xs border-amber-200 ${selectedFinding === finding.id ? 'bg-amber-100 text-amber-900 border-amber-500 ring-1 ring-amber-500' : 'hover:bg-amber-50'}`}
+                        onClick={() => setSelectedFinding(finding.id)}
+                      >
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: finding.color }} />
+                        <span className="truncate">{finding.name}</span>
+                      </Button>
+                    ))}
+                  </div>
               </div>
             </div>
 
-            {/* 2. TRATAMIENTO Y PRECIO (Solo si hay hallazgo) */}
+            {/* 1.1 NOTAS DE DIAGNÓSTICO */}
+            <div className="space-y-2">
+                <Label className="text-xs font-bold text-gray-500 uppercase">Notas Clínicas / Diagnóstico</Label>
+                <textarea
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Escribe observaciones clínicas aquí..."
+                    value={findingNotes}
+                    onChange={(e) => setFindingNotes(e.target.value)}
+                />
+            </div>
+
+            {/* 2. TRATAMIENTO Y PRECIO (Dinámico por Categoría) */}
             {selectedFinding && (
-               <div className="animate-in fade-in-50 space-y-4 pt-4 border-t border-gray-100">
-                   <Label className="text-xs font-bold text-gray-500 uppercase block">2. Tratamiento y Precio</Label>
-                   
-                   <div className="grid grid-cols-2 gap-6">
-                       {/* Selector de Servicio */}
-                       <div className="space-y-2">
-                           <Label className="text-sm">Servicio / Procedimiento</Label>
-                           <Select value={selectedServiceId} onValueChange={handleServiceSelect}>
-                               <SelectTrigger>
-                                   <SelectValue placeholder="Seleccionar variante..." />
-                               </SelectTrigger>
-                               <SelectContent>
-                        {servicesCatalog.map((svc: any) => (
-                          <SelectItem key={svc.id} value={svc.id}>
-                            {svc.name} {svc.category === 'lab' && '📦'}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                           </Select>
-                       </div>
+               <div className="animate-in fade-in-50 pt-4 border-t border-gray-100">
+                   {/* OPCIÓN A: CLÍNICA (Calculadora Visible) */}
+                   {FINDINGS.find(f => f.id === selectedFinding)?.category === 'general' ? (
+                       <div className="space-y-4">
+                           <Label className="text-xs font-bold text-gray-500 uppercase block">2. Tratamiento y Precio</Label>
+                           
+                           <div className="grid grid-cols-2 gap-6">
+                               {/* Selector de Servicio */}
+                               <div className="space-y-2">
+                                   <Label className="text-sm">Servicio / Procedimiento</Label>
+                                   <Select value={selectedServiceId} onValueChange={handleServiceSelect}>
+                                       <SelectTrigger>
+                                           <SelectValue placeholder="Seleccionar variante..." />
+                                       </SelectTrigger>
+                                       <SelectContent>
+                                {servicesCatalog.map((svc: any) => (
+                                  <SelectItem key={svc.id} value={svc.id}>
+                                    {svc.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                                   </Select>
+                               </div>
 
-                       {/* Calculadora de Precio */}
-                       <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-3">
-                           <div className="flex justify-between items-center">
-                               <span className="text-xs text-gray-500 font-medium">Costo Base (Oculto)</span>
-                               <span className="text-xs font-mono text-gray-400">${priceConfig.cost.toFixed(2)}</span>
-                           </div>
+                               {/* Calculadora de Precio */}
+                               <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-3">
+                                   <div className="flex justify-between items-center">
+                                       <span className="text-xs text-gray-500 font-medium">Costo Base (Oculto)</span>
+                                       <span className="text-xs font-mono text-gray-400">${priceConfig.cost.toFixed(2)}</span>
+                                   </div>
 
-                           <div className="flex gap-2 items-end">
-                               <div className="flex-1 space-y-1">
-                                   <Label className="text-xs">Margen Ganancia</Label>
-                                   <div className="flex items-center">
-                                       <Input 
-                                            type="number" 
-                                            className="h-8 text-right pr-1 rounded-r-none border-r-0" 
-                                            value={priceConfig.marginValue}
-                                            onChange={(e) => updatePrice('margin', parseFloat(e.target.value))}
-                                        />
-                                       <div className="h-8 bg-white border border-l-0 border-gray-200 rounded-r-md px-2 flex items-center text-xs text-gray-500 font-medium cursor-pointer"
-                                            onClick={() => setPriceConfig(p => ({ ...p, marginType: p.marginType === 'percent' ? 'fixed' : 'percent' }))}
-                                       >
-                                           {priceConfig.marginType === 'percent' ? '%' : '$'}
+                                   <div className="flex gap-2 items-end">
+                                       <div className="flex-1 space-y-1">
+                                           <Label className="text-xs">Margen</Label>
+                                           <div className="flex items-center">
+                                               <Input 
+                                                    type="number" 
+                                                    className="h-8 text-right pr-1 rounded-r-none border-r-0" 
+                                                    value={priceConfig.marginValue}
+                                                    onChange={(e) => updatePrice('margin', parseFloat(e.target.value))}
+                                                />
+                                               <div className="h-8 bg-white border border-l-0 border-gray-200 rounded-r-md px-2 flex items-center text-xs text-gray-500 font-medium cursor-pointer"
+                                                    onClick={() => setPriceConfig(p => ({ ...p, marginType: p.marginType === 'percent' ? 'fixed' : 'percent' }))}
+                                               >
+                                                   {priceConfig.marginType === 'percent' ? '%' : '$'}
+                                               </div>
+                                           </div>
+                                       </div>
+                                       
+                                       <div className="flex-1 space-y-1">
+                                           <Label className="text-xs text-teal-600 font-bold">Precio Final</Label>
+                                           <div className="relative">
+                                               <span className="absolute left-2 top-1.5 text-teal-600 font-bold">$</span>
+                                               <Input 
+                                                    className="h-8 pl-6 font-bold text-teal-700 border-teal-200 bg-white" 
+                                                    value={priceConfig.price.toFixed(2)}
+                                                    onChange={(e) => updatePrice('price', parseFloat(e.target.value))}
+                                                />
+                                           </div>
                                        </div>
                                    </div>
                                </div>
-                               
-                               <div className="flex-1 space-y-1">
-                                   <Label className="text-xs text-teal-600 font-bold">Precio Final</Label>
-                                   <div className="relative">
-                                       <span className="absolute left-2 top-1.5 text-teal-600 font-bold">$</span>
-                                       <Input 
-                                            className="h-8 pl-6 font-bold text-teal-700 border-teal-200 bg-white" 
-                                            value={priceConfig.price.toFixed(2)}
-                                            onChange={(e) => updatePrice('price', parseFloat(e.target.value))}
-                                        />
-                                   </div>
-                               </div>
                            </div>
                        </div>
-                   </div>
+                   ) : (
+                       /* OPCIÓN B: LABORATORIO (Mensaje Informativo) */
+                       <div className="bg-amber-50 border border-amber-200 rounded-md p-4 flex flex-col gap-2">
+                           <div className="flex items-center gap-2 text-amber-800 font-semibold">
+                               <Settings className="w-5 h-5" />
+                               <span>Configuración Requerida en Wizard</span>
+                           </div>
+                           <p className="text-sm text-amber-700">
+                               El precio final y los detalles del material (Zirconio, E-MAX, etc.) se definirán 
+                               en el <strong>siguiente paso</strong> (Asistente de Laboratorio).
+                           </p>
+                           <div className="text-xs text-amber-600 mt-1">
+                               * Se creará un hallazgo preliminar sin precio hasta confirmar la orden.
+                           </div>
+                       </div>
+                   )}
                </div>
             )}
 
@@ -879,12 +938,14 @@ export function Odontogram({ patientId, patientName, readonly = false }: Odontog
             </Button>
         </div>
 
-      <OrderModal 
-        isOpen={orderModalOpen}
-        onClose={() => setOrderModalOpen(false)}
-        items={itemsToOrder}
-        onConfirm={handleConfirmOrder}
-      />
+
+      {orderModalOpen && (
+        <OrderWizard 
+            patientId={patientId}
+            onClose={() => setOrderModalOpen(false)}
+            initialItems={itemsToOrder}
+        />
+      )}
     </div>
   )
 }
