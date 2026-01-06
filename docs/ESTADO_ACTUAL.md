@@ -242,3 +242,18 @@ code d:\DentalFlow\docs\ESTADO_ACTUAL.md
 
 **Mantenido por**: Agente IA + Usuario
 **Versi贸n**: 1.0
+
+###  Feature - Express Orders Visuals (2026-01-05)
+- [x] Implementado badge **EXPRESS** con 铆cono de fuego 
+- [x] L贸gica de bordes rojos en tarjetas prioritarias
+- [x] Redise帽o de **LabStatsGrid** para m茅tricas agrupadas
+- [x] Exposici贸n de m茅trica \express_count\ via RPC
+- [x] Limpieza de repositorio (.gitignore + cleanup)
+- [x] Migraci贸n SQL aplicada via script
+
+###  Pr贸xima Sesi贸n
+- Verificar flujo E2E
+- Continuar con m贸dulo de Log铆stica
+
+> **趌tima Actualizaci髇 (Real):** 2026-01-05 23:13
+
