@@ -70,7 +70,7 @@ export const useDentalSessionStore = create<DentalSessionStore>((set, get) => ({
 
     const newFinding: ToothFinding = {
       ...finding,
-      id: `finding-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `finding-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       patientId,
       createdAt: new Date(),
     };

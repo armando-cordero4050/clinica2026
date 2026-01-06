@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useDentalSession } from '../../hooks/use-dental-session';
-import { createLabOrder } from '../../actions/lab-orders';
+import { createLabOrder } from '@/actions/lab-orders';
 import { ChevronLeft, Check, Loader2, Package, Truck, Calendar, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
@@ -100,7 +100,7 @@ export function StepReview() {
     }
   };
 
-  const totalCost = wizardState.items.reduce((sum, item) => sum + item.unitPrice, 0);
+  const totalCost = wizardState.items.reduce((sum, item) => sum + (item.unitPrice || 0), 0);
   
   const shippingTypeNames: Record<string, string> = {
     pickup: 'Recoger en Clínica',
