@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Edit, Package } from 'lucide-react';
 import { FindingsPanelProps } from '../../types';
+import { FINDINGS_CATALOG } from '../../constants/dental';
 import { cn } from '@/lib/utils';
 
 export function FindingsPanel({
@@ -150,6 +151,3 @@ export function FindingsPanel({
     </Card>
   );
 }
-
-// Import findings catalog for reference
-import { FINDINGS_CATALOG } from '../../constants/dental';

@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Trash2 } from 'lucide-react';
 import { ShadeMapSelector } from '@/components/lab/shade-map-selector';
 import { useDentalSession } from '../../hooks/use-dental-session';
-import { LabOrderItem } from '../../types';
+import { LabOrderItem, ToothNumber } from '../../types';
 
 export function StepItems() {
   const { wizardState, updateWizardState } = useDentalSession();
@@ -48,7 +48,7 @@ export function StepItems() {
     if (!wizardState.configurationDetails) return;
 
     const newItem: LabOrderItem = {
-      id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
       configurationId: wizardState.selectedConfigurationId || '',
       configurationName: wizardState.configurationDetails.name,
       toothNumber: 11, // Default tooth, user should change
@@ -114,7 +114,7 @@ export function StepItems() {
                           const toothNum = parseInt(e.target.value) || 11;
                           const updatedItems = wizardState.items.map((i) =>
                             i.id === item.id
-                              ? { ...i, toothNumber: toothNum as import('../../types').ToothNumber }
+                              ? { ...i, toothNumber: toothNum as ToothNumber }
                               : i
                           );
                           updateWizardState({ items: updatedItems });

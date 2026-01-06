@@ -76,7 +76,7 @@ export function OdontogramV2({
       if (result.success && result.data) {
         // Transform database findings to ToothFinding format
         const transformedFindings: ToothFinding[] = result.data.map((f: any) => ({
-          id: f.id || `finding_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: f.id || crypto.randomUUID(),
           patientId: patientId,
           toothNumber: f.tooth_number,
           surface: f.surface,

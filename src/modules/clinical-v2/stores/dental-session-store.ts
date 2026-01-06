@@ -70,7 +70,7 @@ export const useDentalSessionStore = create<DentalSessionStore>((set, get) => ({
   addFinding: (finding) => {
     const newFinding: ToothFinding = {
       ...finding,
-      id: `finding_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -126,8 +126,8 @@ export const useDentalSessionStore = create<DentalSessionStore>((set, get) => ({
     // Create initial items from lab findings
     const items = labFindings
       .filter(f => f.status === 'pending')
-      .map((f, index) => ({
-        id: `item_${Date.now()}_${index}`,
+      .map((f) => ({
+        id: crypto.randomUUID(),
         configurationId: f.serviceId || '',
         configurationName: f.findingName,
         toothNumber: f.toothNumber,
