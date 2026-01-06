@@ -257,3 +257,17 @@ code d:\DentalFlow\docs\ESTADO_ACTUAL.md
 
 > **Última Actualización (Real):** 2026-01-05 23:13
 
+
+##  DIAGNÓSTICO CRÍTICO: Odontograma & Wizard (2026-01-06)
+**Problema**: Desconexión total entre la interfaz visual (Odontograma) y la lógica transaccional (Wizard).
+**Diagnóstico**: 
+- \odontogram.tsx\ es puramente visual, no tiene disparadores de eventos.
+- \order-wizard.tsx\ funciona aislado pero no recibe contexto.
+**Solución Documentada**: Ver \docs/DEBUG_ODONTOGRAMA_WIZARD.md\.
+
+###  PLAN DE TRABAJO (FIX INTEGRACIÓN)
+1. **Modificar Odontograma**: Añadir prop \onTreatmentSelect\ y emitir evento al seleccionar prótesis.
+2. **Conectar Padre**: En \DentalChart/index.tsx\, escuchar el evento y abrir el Wizard.
+3. **Inyectar Contexto**: Pasar \initialItems\ (Diente + Tratamiento) al Wizard.
+4. **Refinar Wizard**: Asegurar que \items-configuration.tsx\ use los datos inyectados.
+
