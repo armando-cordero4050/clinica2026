@@ -112,3 +112,32 @@ El usuario (tÃº) siente que "no logramos solucionar el tema del wizard" porque:
     *   El `ItemsConfiguration` debe leer esos `initialItems` y poblar la tabla automÃ¡ticamente.
 
 Este documento sirve como la nueva "Fuente de Verdad TÃ©cnica" para abordar la reparaciÃ³n.
+
+##  6. Riesgos y Consideraciones Adicionales (Feedback IA)
+
+### 1. Mapeo de Materiales (Ambigüedad Clínica)
+**Riesgo:** El odontograma envía 'Corona', pero el laboratorio tiene múltiples tipos (Zirconio, Metal-Cerámica, etc.).
+**Decisión Técnica:** El Wizard **NO** intentará adivinar el material.
+- Se mantendrá el **Paso 1 (Selección de Material)** como obligatorio.
+- El pre-llenado afectará únicamente al **Paso 2 (Items)**, inyectando el número de diente y tipo de trabajo genérico, evitando que el usuario tenga que volver a escribir el diente.
+
+### 2. Persistencia del Estado Clínico
+**Riesgo:** Si el usuario cancela el Wizard, el hallazgo en el odontograma podría quedar inconsistente.
+**Decisión Técnica:** El estado 'Corona' en el odontograma representa una **Indicación Clínica**, independiente de si la orden de laboratorio se ha creado o no.
+- Si se cancela el Wizard, la corona permanece como hallazgo clínico, pero sin vínculo a orden de lab.
+
+### 3. Contexto de Datos (Integridad Referencial)
+**Riesgo:** Crear órdenes huérfanas sin \patient_id\ válido.
+**Solución Refinada:** El objeto de configuración inyectado al Wizard será robusto:
+\\\	ypescript
+interface WizardContext {
+  patient_id: string; // Obligatorio
+  tooth_number: number;
+  suggested_treatment: 'crown' | 'bridge';
+  source: 'odontogram'; // Para analytics/debug
+}
+\\\
+
+### 4. Sincronización de Estados (Kanban)
+**Verificación:** Asegurar que el RPC \create_lab_order\ asigne el estado inicial correcto (\clinic_pending\) para que aparezca visible inmediatamente en el Kanban.
+
