@@ -111,9 +111,10 @@ export function StepItems() {
                         type="number"
                         value={item.toothNumber}
                         onChange={(e) => {
+                          const toothNum = parseInt(e.target.value) || 11;
                           const updatedItems = wizardState.items.map((i) =>
                             i.id === item.id
-                              ? { ...i, toothNumber: parseInt(e.target.value) || 11 }
+                              ? { ...i, toothNumber: toothNum as import('../../types').ToothNumber }
                               : i
                           );
                           updateWizardState({ items: updatedItems });
