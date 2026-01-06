@@ -1,2 +1,0 @@
-# dentalapp
-aplicacion dental guatemala
